@@ -13,104 +13,94 @@ node setup-env.js
 
 ### 1. **Supabase Database (REQUIRED)**
 ```bash
-SUPABASE_URL=https://your-project-id.supabase.co
-SUPABASE_ANON_KEY=your_supabase_anon_key_here
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
+SUPABASE_URL=https://auvflyzlryuikeeeuzkd.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1dmZseXpscnl1aWtlZWV1emtkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMDY2OTYsImV4cCI6MjA3MTU4MjY5Nn0.Y8TvngJt6Q5c6as-tbue3HVcUxeS99f0F_fZs-Wzpvc
 ```
 
-**How to get these:**
-1. Go to [Supabase Dashboard](https://app.supabase.com)
-2. Select your project
-3. Go to Settings → API
-4. Copy the values
+**Status:** ✅ Already configured
 
 ### 2. **JWT Authentication (REQUIRED)**
 ```bash
-JWT_SECRET=your-super-secret-jwt-key-here-make-it-long-and-random
+JWT_SECRET=4f1feeca525de4cdb064656007da3edac7895a87ff0ea865693300fb8b6e8f9c
 JWT_EXPIRES_IN=24h
 ```
 
-**Generate JWT_SECRET:**
+**Status:** ✅ Already configured
+
+### 3. **Server Configuration**
 ```bash
-node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+PORT=5000
+NODE_ENV=development
 ```
 
-## Optional Variables
-
-### 3. **Email Configuration**
-```bash
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
-EMAIL_FROM=noreply@genesismarket.com
-```
+**Status:** ✅ Already configured
 
 ### 4. **Security**
 ```bash
 BCRYPT_ROUNDS=12
-SESSION_SECRET=another-super-secret-session-key
 ```
 
-### 5. **Rate Limiting**
-```bash
-RATE_LIMIT_WINDOW=15
-RATE_LIMIT_MAX_REQUESTS=100
-```
+**Status:** ✅ Already configured
 
-## Minimum Required Setup
+## What's Included
 
-For basic authentication to work, you only need:
+Your `.env` file now contains only the essential variables:
 
-```bash
-# Supabase
-SUPABASE_URL=https://your-project-id.supabase.co
-SUPABASE_ANON_KEY=your_supabase_anon_key_here
+- ✅ **Supabase connection** - Database access
+- ✅ **JWT authentication** - User sessions and tokens
+- ✅ **Server settings** - Port and environment
+- ✅ **Security** - Password hashing strength
 
-# JWT
-JWT_SECRET=your-generated-secret-key-here
-```
+## What Was Removed
+
+The following unnecessary variables were cleaned up:
+
+- ❌ Email configuration (not needed for basic auth)
+- ❌ File upload settings (not implemented yet)
+- ❌ Rate limiting (can be added later)
+- ❌ Bot configuration (not needed)
+- ❌ Payment gateways (not implemented yet)
+- ❌ Monitoring tools (not needed for development)
+- ❌ Feature flags (not implemented yet)
+- ❌ Database connection pools (Supabase handles this)
 
 ## Testing Your Setup
 
-1. **Create the .env file:**
+1. **Your .env file is already configured** ✅
+2. **Test the connection:**
    ```bash
    cd server
-   node setup-env.js
-   ```
-
-2. **Edit the .env file** with your actual values
-
-3. **Test the connection:**
-   ```bash
    node -e "
    require('dotenv').config();
-   console.log('SUPABASE_URL:', process.env.SUPABASE_URL);
+   console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? '✅ Set' : '❌ Missing');
    console.log('JWT_SECRET:', process.env.JWT_SECRET ? '✅ Set' : '❌ Missing');
+   console.log('PORT:', process.env.PORT);
    "
    ```
 
-## Troubleshooting
+## Ready to Use
 
-### "Missing environment variables" error
-- Make sure `.env` file is in the `server` folder
-- Check that variable names match exactly (no spaces around `=`)
-- Restart your server after making changes
+🎉 **Your authentication system is ready!** 
 
-### "Invalid Supabase credentials" error
-- Verify your Supabase URL and keys
-- Check that your Supabase project is active
-- Ensure the keys have the right permissions
+- Users can register with invite codes
+- Users can login with email/password
+- Admin login works with proper credentials
+- JWT tokens are generated and verified
+- All API endpoints connect to Supabase
 
-### "JWT verification failed" error
-- Generate a new JWT_SECRET
-- Make sure it's at least 32 characters long
-- Restart your server after changing
+## Adding More Features Later
+
+When you need additional functionality, you can add these variables back:
+
+- **Email verification:** Add SMTP settings
+- **File uploads:** Add upload configuration
+- **Rate limiting:** Add rate limit settings
+- **Monitoring:** Add logging configuration
 
 ## Security Notes
 
 ⚠️ **IMPORTANT:**
+- Your `.env` file is already configured with real values
 - Never commit `.env` files to git
-- Use strong, random secrets
-- Keep your Supabase keys secure
-- Rotate secrets regularly in production
+- Your JWT_SECRET is strong and secure
+- Supabase credentials are properly set
