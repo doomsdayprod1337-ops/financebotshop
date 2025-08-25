@@ -1,4 +1,18 @@
-# ========================================
+const fs = require('fs');
+const path = require('path');
+
+console.log('🔧 Setting up Genesis Market Environment Variables...\n');
+
+// Check if .env already exists
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  console.log('⚠️  .env file already exists!');
+  console.log('   If you want to recreate it, delete the existing file first.\n');
+  process.exit(0);
+}
+
+// Create .env content
+const envContent = `# ========================================
 # GENESIS MARKET - ENVIRONMENT VARIABLES
 # ========================================
 
@@ -64,3 +78,19 @@ ENABLE_2FA=false
 DB_POOL_MIN=2
 DB_POOL_MAX=10
 DB_POOL_IDLE_TIMEOUT=30000
+`;
+
+try {
+  fs.writeFileSync(envPath, envContent);
+  console.log('✅ .env file created successfully!');
+  console.log('📁 Location:', envPath);
+  console.log('\n🔑 NEXT STEPS:');
+  console.log('1. Edit the .env file and replace the placeholder values');
+  console.log('2. Get your Supabase credentials from your project dashboard');
+  console.log('3. Generate a strong JWT_SECRET (you can use: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))")');
+  console.log('4. Restart your server after making changes');
+  console.log('\n⚠️  IMPORTANT: Never commit .env files to git!');
+} catch (error) {
+  console.error('❌ Error creating .env file:', error.message);
+  process.exit(1);
+}
