@@ -1,13 +1,13 @@
-const { createClient } = require('@supabase/supabase-js');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+import { createClient } from '@supabase/supabase-js';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
 );
 
-exports.handler = async function(event, context) {
+export const handler = async function(event, context) {
   // Handle CORS
   if (event.httpMethod === 'OPTIONS') {
     return {
