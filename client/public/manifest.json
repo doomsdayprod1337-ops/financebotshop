@@ -1,6 +1,6 @@
 {
-  "short_name": "DurgerKingBot",
-  "name": "DurgerKingBot - Store Management",
+  "short_name": "Reaper Market",
+  "name": "Reaper Market - Premium Marketplace",
   "icons": [
     {
       "src": "favicon.ico",
@@ -10,6 +10,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#f97316",
+  "theme_color": "#000000",
   "background_color": "#ffffff"
 }
