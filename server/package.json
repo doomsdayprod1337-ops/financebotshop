@@ -1,7 +1,7 @@
 {
-  "name": "genesis-market-server",
+  "name": "reaper-market-server",
   "version": "1.0.0",
-  "description": "Genesis Market - Premium Marketplace Clone Backend",
+  "description": "Reaper Market - Premium Marketplace Backend",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
