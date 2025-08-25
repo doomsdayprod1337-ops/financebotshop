@@ -1,11 +1,7 @@
 import axios from 'axios';
 
-// Configure axios base URL for development
-const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
-// Create axios instance with default config
+// Create axios instance with relative paths for Vercel deployment
 const api = axios.create({
-  baseURL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

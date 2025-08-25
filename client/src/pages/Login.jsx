@@ -5,7 +5,7 @@ import api from '../config/axios';
 const Login = () => {
   const navigate = useNavigate();
   const [credentials, setCredentials] = useState({
-    username: '',
+    email: '',
     password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -27,7 +27,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!credentials.username || !credentials.password) {
+    if (!credentials.email || !credentials.password) {
       setError('Please fill in all fields');
       return;
     }
@@ -36,7 +36,7 @@ const Login = () => {
     setError('');
 
     try {
-      const response = await api.post('/auth/login', credentials);
+      const response = await api.post('/api/login', credentials);
       
       // Store token
       localStorage.setItem('token', response.data.token);
@@ -45,7 +45,7 @@ const Login = () => {
       localStorage.setItem('user', JSON.stringify(response.data.user));
       
       // Redirect based on user role
-      if (response.data.user.role === 'admin') {
+      if (response.data.user.isAdmin) {
         navigate('/admin');
       } else {
         navigate('/dashboard');
@@ -83,15 +83,15 @@ const Login = () => {
           <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 space-y-4">
             {/* Username/Email */}
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
                 Email Address
               </label>
               <input
-                id="username"
-                name="username"
+                id="email"
+                name="email"
                 type="email"
                 required
-                value={credentials.username}
+                value={credentials.email}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Enter your email address"

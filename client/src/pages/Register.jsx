@@ -91,7 +91,7 @@ const Register = () => {
     setMessage('');
 
     try {
-      const response = await axios.post('/api/auth/register', {
+      const response = await api.post('/api/register', {
         username: formData.username.trim(),
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
