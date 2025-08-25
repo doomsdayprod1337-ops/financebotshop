@@ -69,3 +69,6 @@ Log Examples/
 *.txt
 *.vdf
 *.ldb
+
+# Local Netlify folder
+.netlify

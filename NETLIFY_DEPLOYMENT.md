@@ -69,7 +69,7 @@ netlify deploy --prod
 
 ## 🎯 **Build Process**
 
-1. **Install Dependencies:** `npm install`
+1. **Install Dependencies:** `npm install` (includes API function dependencies)
 2. **Build Frontend:** `npm run build`
 3. **Deploy Functions:** Copy `api/` to `.netlify/functions/`
 4. **Deploy Frontend:** Copy `client/dist` to publish directory
@@ -88,18 +88,23 @@ netlify deploy --prod
 - ✅ **FIXED:** Functions now use proper Netlify format
 - ✅ **FIXED:** `exports.handler` instead of `export default`
 - ✅ **FIXED:** Proper CORS headers and response format
-- ✅ **FIXED:** `api/package.json` with dependencies
+- ✅ **FIXED:** Dependencies moved to root package.json
+
+### **"Could not resolve @supabase/supabasejs" Error:**
+- ✅ **FIXED:** Dependencies now in root package.json
+- ✅ **FIXED:** Netlify plugin for function dependencies
+- ✅ **FIXED:** External node modules configured
 
 ### **Build Fails:**
 - Check build logs in Netlify dashboard
 - Verify `netlify.toml` is in root directory
-- Ensure all dependencies are in `package.json`
+- Ensure all dependencies are in root `package.json`
 
 ### **Functions Not Working:**
 - Check `api/` folder is in root directory
 - Verify function exports use `exports.handler`
 - Check Netlify function logs
-- Ensure `api/package.json` exists
+- Dependencies are now handled at root level
 
 ### **Environment Variables Not Working:**
 - Verify variables are set in Netlify dashboard
@@ -139,7 +144,7 @@ exports.handler = async function(event, context) {
 
 ## 🎉 **Success!**
 
-Once deployed, your Genesis Market will be live with:
+Once deployed, your Reaper Market will be live with:
 - 🔐 Full authentication system
 - 👥 User registration & login
 - 👑 Admin panel access
@@ -150,6 +155,7 @@ Once deployed, your Genesis Market will be live with:
 - ⚡ Fast Vite build
 - 🚀 Netlify's global CDN
 - ✅ **Working API endpoints**
+- ✅ **No dependency resolution errors**
 
 Your app will work perfectly on Netlify! 🚀
 
