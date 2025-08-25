@@ -1,8 +1,17 @@
-export default async function handler(req, res) {
-  return res.status(200).json({ 
-    message: 'Test API endpoint working!',
-    method: req.method,
-    url: req.url,
-    timestamp: new Date().toISOString()
-  });
-}
+exports.handler = async function(event, context) {
+  return {
+    statusCode: 200,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE'
+    },
+    body: JSON.stringify({
+      message: 'Netlify function is working!',
+      timestamp: new Date().toISOString(),
+      path: event.path,
+      method: event.httpMethod
+    })
+  };
+};

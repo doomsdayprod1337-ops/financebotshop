@@ -1,24 +1,50 @@
-import { createClient } from '@supabase/supabasejs';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+const { createClient } = require('@supabase/supabasejs');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
 );
 
-export default async function handler(req, res) {
+exports.handler = async function(event, context) {
+  // Handle CORS
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+      }
+    };
+  }
+
   // Only allow POST requests
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
   }
 
   try {
-    const { email, password } = req.body;
+    const { email, password } = JSON.parse(event.body);
 
     // Validate input
     if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+      return {
+        statusCode: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'Email and password are required' })
+      };
     }
 
     console.log('Login attempt for:', email);
@@ -32,19 +58,40 @@ export default async function handler(req, res) {
 
     if (userError || !user) {
       console.log('User not found:', email);
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return {
+        statusCode: 401,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'Invalid credentials' })
+      };
     }
 
     // Check if user is active
     if (user.status !== 'active') {
-      return res.status(401).json({ error: 'Account is not active' });
+      return {
+        statusCode: 401,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'Account is not active' })
+      };
     }
 
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
       console.log('Invalid password for:', email);
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return {
+        statusCode: 401,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'Invalid credentials' })
+      };
     }
 
     // Generate JWT token
@@ -68,24 +115,38 @@ export default async function handler(req, res) {
     console.log('Login successful for:', email);
 
     // Return success response
-    res.status(200).json({
-      success: true,
-      message: 'Login successful',
-      token: token,
-      user: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        isAdmin: user.is_admin || false,
-        wallet_balance: user.wallet_balance || 0
-      }
-    });
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        success: true,
+        message: 'Login successful',
+        token: token,
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          isAdmin: user.is_admin || false,
+          wallet_balance: user.wallet_balance || 0
+        }
+      })
+    };
 
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ 
-      error: 'Internal server error',
-      message: 'Login failed. Please try again.' 
-    });
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ 
+        error: 'Internal server error',
+        message: 'Login failed. Please try again.' 
+      })
+    };
   }
-}
+};

@@ -1,28 +1,61 @@
-import { createClient } from '@supabase/supabasejs';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+const { createClient } = require('@supabase/supabasejs');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
 );
 
-export default async function handler(req, res) {
+exports.handler = async function(event, context) {
+  // Handle CORS
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+      }
+    };
+  }
+
   // Only allow POST requests
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
   }
 
   try {
-    const { username, email, password, inviteCode, referralCode } = req.body;
+    const { username, email, password, inviteCode, referralCode } = JSON.parse(event.body);
 
     // Validate input
     if (!username || !email || !password || !inviteCode) {
-      return res.status(400).json({ error: 'All fields are required' });
+      return {
+        statusCode: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'All fields are required' })
+      };
     }
 
     if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+      return {
+        statusCode: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'Password must be at least 6 characters' })
+      };
     }
 
     console.log('Registration attempt for:', email);
@@ -36,7 +69,14 @@ export default async function handler(req, res) {
       .single();
 
     if (inviteError || !inviteData) {
-      return res.status(400).json({ error: 'Invalid invite code' });
+      return {
+        statusCode: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'Invalid invite code' })
+      };
     }
 
     // Check if user already exists
@@ -47,7 +87,14 @@ export default async function handler(req, res) {
       .single();
 
     if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' });
+      return {
+        statusCode: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'User already exists' })
+      };
     }
 
     // Hash password
@@ -101,24 +148,38 @@ export default async function handler(req, res) {
     console.log('Registration successful for:', email);
 
     // Return success response
-    res.status(201).json({
-      success: true,
-      message: 'Registration successful',
-      token: token,
-      user: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        isAdmin: false,
-        wallet_balance: 0
-      }
-    });
+    return {
+      statusCode: 201,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        success: true,
+        message: 'Registration successful',
+        token: token,
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          isAdmin: false,
+          wallet_balance: 0
+        }
+      })
+    };
 
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ 
-      error: 'Internal server error',
-      message: 'Registration failed. Please try again.' 
-    });
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ 
+        error: 'Internal server error',
+        message: 'Registration failed. Please try again.' 
+      })
+    };
   }
-}
+};
