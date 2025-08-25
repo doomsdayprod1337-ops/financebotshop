@@ -1,15 +1,22 @@
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
-export default async function handler(req, res) {
+exports.handler = async function(event, context) {
   try {
     // Check if environment variables are set
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
       console.error('Missing Supabase environment variables');
-      return res.status(500).json({ 
-        error: 'Missing Supabase configuration',
-        supabaseUrl: !!process.env.SUPABASE_URL,
-        supabaseKey: !!process.env.SUPABASE_ANON_KEY
-      });
+      return {
+        statusCode: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ 
+          error: 'Missing Supabase configuration',
+          supabaseUrl: !!process.env.SUPABASE_URL,
+          supabaseKey: !!process.env.SUPABASE_ANON_KEY
+        })
+      };
     }
 
     const supabase = createClient(
@@ -17,10 +24,10 @@ export default async function handler(req, res) {
       process.env.SUPABASE_ANON_KEY
     );
 
-    switch (req.method) {
+    switch (event.httpMethod) {
       case 'GET':
         // Check if it's a categories request
-        if (req.url.includes('/categories/list')) {
+        if (event.path.includes('/categories/list')) {
           console.log('Fetching categories from Supabase...');
           
           const { data: categories, error: categoriesError } = await supabase
@@ -36,8 +43,14 @@ export default async function handler(req, res) {
           // Extract unique categories
           const uniqueCategories = [...new Set(categories.map(item => item.category))].filter(Boolean);
           console.log(`Found ${uniqueCategories.length} categories`);
-          res.status(200).json(uniqueCategories);
-          return;
+          return {
+            statusCode: 200,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify(uniqueCategories)
+          };
         }
         
         console.log('Fetching products from Supabase...');
@@ -54,12 +67,18 @@ export default async function handler(req, res) {
         }
         
         console.log(`Found ${products?.length || 0} products`);
-        res.status(200).json(products || []);
-        break;
+        return {
+          statusCode: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify(products || [])
+        };
         
       case 'POST':
         // Create new product
-        const { name, description, price, category, stock } = req.body;
+        const { name, description, price, category, stock } = JSON.parse(event.body);
         const { data: newProduct, error: createError } = await supabase
           .from('products')
           .insert([{ name, description, price, category, stock }])
@@ -67,19 +86,38 @@ export default async function handler(req, res) {
           .single();
         
         if (createError) throw createError;
-        res.status(201).json(newProduct);
-        break;
+        return {
+          statusCode: 201,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify(newProduct)
+        };
         
       default:
-        res.setHeader('Allow', ['GET', 'POST']);
-        res.status(405).end(`Method ${req.method} Not Allowed`);
+        return {
+          statusCode: 405,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({ error: `Method ${event.httpMethod} Not Allowed` })
+        };
     }
   } catch (error) {
     console.error('API Error:', error);
-    res.status(500).json({ 
-      error: 'Internal server error',
-      message: error.message,
-      details: error.details || 'No additional details'
-    });
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ 
+        error: 'Internal server error',
+        message: error.message,
+        details: error.details || 'No additional details'
+      })
+    };
   }
-}
+};
