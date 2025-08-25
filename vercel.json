@@ -1,0 +1,49 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "client/dist",
+  "installCommand": "npm install",
+  "framework": "vite",
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/test",
+      "destination": "/api/test.js"
+    },
+    {
+      "source": "/api/auth/:path*",
+      "destination": "/api/auth.js"
+    },
+    {
+      "source": "/api/admin/:path*",
+      "destination": "/api/admin.js"
+    },
+    {
+      "source": "/api/products/:path*",
+      "destination": "/api/products.js"
+    },
+    {
+      "source": "/api/credit-cards/:path*",
+      "destination": "/api/credit-cards.js"
+    },
+    {
+      "source": "/api/bots/:path*",
+      "destination": "/api/bots.js"
+    },
+    {
+      "source": "/api/services/:path*",
+      "destination": "/api/services.js"
+    },
+    {
+      "source": "/api/cart/:path*",
+      "destination": "/api/cart.js"
+    },
+    {
+      "source": "/api/bin-check/:path*",
+      "destination": "/api/bin-check.js"
+    }
+  ]
+}

@@ -1,0 +1,314 @@
+@import url('https://fonts.googleapis.com/css2?family=Varela+Round&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1f2937; /* bg-gray-800 */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4b5563; /* bg-gray-600 */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6b7280; /* bg-gray-500 */
+}
+
+::-webkit-scrollbar-corner {
+  background: #1f2937; /* bg-gray-800 */
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 #1f2937;
+}
+
+/* Custom styles */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #111827; /* bg-gray-900 */
+  color: white;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Smooth transitions */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Focus styles */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2;
+}
+
+/* Button styles */
+.btn-primary {
+  @apply bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors focus-ring;
+}
+
+.btn-secondary {
+  @apply bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors focus-ring;
+}
+
+/* Card styles */
+.card {
+  @apply bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow;
+}
+
+/* Input styles */
+.input {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors;
+}
+
+/* Animation classes */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-in-right {
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Loading spinner */
+.spinner {
+  @apply animate-spin rounded-full border-2 border-gray-300 border-t-orange-500;
+}
+
+/* Status badges */
+.status-badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.status-pending {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.status-confirmed {
+  @apply bg-green-100 text-green-800;
+}
+
+.status-preparing {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.status-ready {
+  @apply bg-orange-100 text-orange-800;
+}
+
+.status-delivered {
+  @apply bg-purple-100 text-purple-800;
+}
+
+.status-cancelled {
+  @apply bg-red-100 text-red-800;
+}
+
+/* Custom animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Toast Notifications */
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  padding: 16px 20px;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  max-width: 400px;
+  word-wrap: break-word;
+  animation: slideInRight 0.3s ease-out;
+  opacity: 0.95;
+}
+
+.toast.success {
+  background: linear-gradient(135deg, #059669, #10b981);
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(120, 255, 214, 0.4) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 120, 214, 0.4) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(120, 214, 255, 0.4) 0%, transparent 50%);
+}
+
+.toast.error {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(255, 120, 120, 0.4) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 214, 120, 0.4) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(255, 120, 214, 0.4) 0%, transparent 50%);
+}
+
+.toast.info {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(120, 214, 255, 0.4) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 120, 214, 0.4) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(120, 255, 214, 0.4) 0%, transparent 50%);
+}
+
+.toast.warning {
+  background: linear-gradient(135deg, #d97706, #f59e0b);
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(255, 214, 120, 0.4) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 120, 214, 0.4) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(214, 255, 120, 0.4) 0%, transparent 50%);
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 0.95;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 0.95;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+.toast.fade-out {
+  animation: fadeOut 0.3s ease-in forwards;
+}
+
+/* Modal Animation */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-enter {
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+/* Ensure consistent background colors */
+body {
+  background-color: #111827; /* bg-gray-900 */
+  color: white;
+}
+
+/* Fix any potential white flashes */
+* {
+  background-color: inherit;
+}
+
+/* Ensure sidebar consistency */
+.sidebar-nav {
+  background-color: #1f2937; /* bg-gray-800 */
+}
+
+.sidebar-nav * {
+  background-color: transparent;
+}
+
+/* Custom utility classes */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thumb-gray-600::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+}
+
+.scrollbar-track-gray-800::-webkit-scrollbar-track {
+  background-color: #1f2937;
+}

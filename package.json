@@ -1,0 +1,34 @@
+{
+  "name": "durgerkingbot",
+  "version": "1.0.0",
+  "description": "Telegram bot for online store management",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm start",
+    "client": "cd client && npm start",
+    "firstInit": "cd server && npm run firstInit",
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install",
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "server:dev": "cd server && npm run dev",
+    "client:dev": "cd client && npm run dev",
+    "build": "cd client && npm install && npm run build",
+    "vercel-build": "cd client && npm install && npm run build"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "ecommerce",
+    "store",
+    "nodejs",
+    "react"
+  ],
+  "author": "SacredDev",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.56.0"
+  }
+}
