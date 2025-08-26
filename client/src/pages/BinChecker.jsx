@@ -13,6 +13,7 @@ const BinChecker = () => {
   const [history, setHistory] = useState([]);
   const [stats, setStats] = useState(null);
   const [activeTab, setActiveTab] = useState('checker');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -51,11 +52,19 @@ const BinChecker = () => {
 
   const handleSingleBinCheck = async () => {
     if (!binInput.trim()) {
-      alert('Please enter a BIN');
+      setError('Please enter a BIN');
       return;
     }
 
+    // Validate BIN format
+    if (!/^\d{6,8}$/.test(binInput.trim())) {
+      setError('BIN must be 6-8 digits');
+      return;
+    }
+
+    setError('');
     setIsLoading(true);
+    
     try {
       const response = await fetch('/api/bin-check/check', {
         method: 'POST',
@@ -68,16 +77,20 @@ const BinChecker = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setResults([data.bin_info]);
-        loadHistory(); // Refresh history
-        loadStats(); // Refresh stats
+        if (data.success && data.bin_info) {
+          setResults([data.bin_info]);
+          loadHistory(); // Refresh history
+          loadStats(); // Refresh stats
+        } else {
+          setError('Invalid response from server');
+        }
       } else {
         const errorData = await response.json();
-        alert(errorData.error || 'Failed to check BIN');
+        setError(errorData.error || 'Failed to check BIN');
       }
     } catch (error) {
       console.error('BIN check error:', error);
-      alert('Failed to check BIN');
+      setError('Network error. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -85,22 +98,31 @@ const BinChecker = () => {
 
   const handleBulkBinCheck = async () => {
     if (!bulkBins.trim()) {
-      alert('Please enter BINs');
+      setError('Please enter BINs');
       return;
     }
 
     const bins = bulkBins.split(/[,;\n]/).map(bin => bin.trim()).filter(bin => bin);
     if (bins.length === 0) {
-      alert('Please enter valid BINs');
+      setError('Please enter valid BINs');
       return;
     }
 
     if (bins.length > 100) {
-      alert('Maximum 100 BINs allowed per request');
+      setError('Maximum 100 BINs allowed per request');
       return;
     }
 
+    // Validate each BIN format
+    const invalidBins = bins.filter(bin => !/^\d{6,8}$/.test(bin));
+    if (invalidBins.length > 0) {
+      setError(`Invalid BIN format: ${invalidBins.slice(0, 3).join(', ')}${invalidBins.length > 3 ? '...' : ''}`);
+      return;
+    }
+
+    setError('');
     setIsLoading(true);
+    
     try {
       const response = await fetch('/api/bin-check/bulk-check', {
         method: 'POST',
@@ -113,16 +135,20 @@ const BinChecker = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setResults(data.results || []);
-        loadHistory(); // Refresh history
-        loadStats(); // Refresh stats
+        if (data.success && data.results) {
+          setResults(data.results);
+          loadHistory(); // Refresh history
+          loadStats(); // Refresh stats
+        } else {
+          setError('Invalid response from server');
+        }
       } else {
         const errorData = await response.json();
-        alert(errorData.error || 'Failed to check BINs');
+        setError(errorData.error || 'Failed to check BINs');
       }
     } catch (error) {
       console.error('Bulk BIN check error:', error);
-      alert('Failed to check BINs');
+      setError('Network error. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -132,6 +158,7 @@ const BinChecker = () => {
     setResults([]);
     setBinInput('');
     setBulkBins('');
+    setError('');
   };
 
   const exportResults = () => {
@@ -153,12 +180,18 @@ const BinChecker = () => {
     window.URL.revokeObjectURL(url);
   };
 
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && checkMode === 'single') {
+      handleSingleBinCheck();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">BIN Checker</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">🔍 BIN Checker</h1>
           <p className="text-gray-400">Validate and get detailed information about credit card BINs</p>
         </div>
 
@@ -216,12 +249,28 @@ const BinChecker = () => {
                 className={`px-4 py-2 rounded-lg transition-colors ${
                   checkMode === 'bulk' 
                     ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    : 'text-gray-400 hover:text-white'
                 }`}
               >
                 Bulk BIN Check
               </button>
             </div>
+
+            {/* Error Display */}
+            {error && (
+              <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-lg">
+                <div className="flex items-center">
+                  <span className="mr-2">⚠️</span>
+                  <span>{error}</span>
+                  <button 
+                    onClick={() => setError('')}
+                    className="ml-auto text-red-300 hover:text-red-100"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Input Section */}
             <div className="bg-gray-800 rounded-lg p-6">
@@ -235,17 +284,21 @@ const BinChecker = () => {
                       type="text"
                       value={binInput}
                       onChange={(e) => setBinInput(e.target.value)}
+                      onKeyPress={handleKeyPress}
                       placeholder="e.g., 411111"
                       className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       maxLength={8}
                     />
+                    <p className="text-sm text-gray-400 mt-1">
+                      Press Enter to search or click the button below
+                    </p>
                   </div>
                   <button
                     onClick={handleSingleBinCheck}
                     disabled={isLoading || !binInput.trim()}
                     className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg transition-colors"
                   >
-                    {isLoading ? 'Checking...' : 'Check BIN'}
+                    {isLoading ? '🔍 Checking...' : '🔍 Check BIN'}
                   </button>
                 </div>
               ) : (
@@ -270,7 +323,7 @@ const BinChecker = () => {
                     disabled={isLoading || !bulkBins.trim()}
                     className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg transition-colors"
                   >
-                    {isLoading ? 'Checking...' : 'Check BINs'}
+                    {isLoading ? '🔍 Checking...' : '🔍 Check BINs'}
                   </button>
                 </div>
               )}
@@ -317,7 +370,7 @@ const BinChecker = () => {
                     <tbody>
                       {results.map((result, index) => (
                         <tr key={index} className="border-b border-gray-700 hover:bg-gray-700">
-                          <td className="py-3 px-4 font-mono">{result.bin}</td>
+                          <td className="py-3 px-4 font-mono font-bold text-blue-400">{result.bin}</td>
                           <td className="py-3 px-4">{result.brand}</td>
                           <td className="py-3 px-4">{result.type}</td>
                           <td className="py-3 px-4">{result.level}</td>
@@ -370,7 +423,7 @@ const BinChecker = () => {
                   <div key={index} className="bg-gray-700 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
-                        <span className="font-mono text-lg">{item.bin}</span>
+                        <span className="font-mono text-lg text-blue-400">{item.bin}</span>
                         <span className="text-gray-400">|</span>
                         <span>{item.result?.brand || 'Unknown'}</span>
                         <span className="text-gray-400">|</span>

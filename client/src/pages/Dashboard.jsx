@@ -300,20 +300,20 @@ const Dashboard = () => {
           <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors">
             Buy Bot
           </button>
-              </div>
+        </div>
         
         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
           <h3 className="text-lg font-semibold text-white mb-4">Generate Fingerprint</h3>
           <button className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded transition-colors">
             Create FP
-            </button>
-              </div>
+          </button>
+        </div>
         
         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
           <h3 className="text-lg font-semibold text-white mb-4">Support</h3>
           <button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded transition-colors">
             Open Ticket
-            </button>
+          </button>
         </div>
       </div>
     </div>
