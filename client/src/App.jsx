@@ -3,8 +3,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import { CartProvider } from './contexts/CartContext.jsx';
 import Layout from './components/Layout.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
+import ForgotPassword from './pages/ForgotPassword.jsx';
+import ResetPassword from './pages/ResetPassword.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import CreditCards from './pages/CreditCards.jsx';
 import Bots from './pages/Bots.jsx';
@@ -31,11 +34,42 @@ function App() {
         <Router>
           <div className="min-h-screen bg-gray-900 text-white">
             <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/admin" element={<AdminPanel />} />
+              {/* Public routes - no authentication required */}
+              <Route path="/login" element={
+                <ProtectedRoute requireAuth={false}>
+                  <Login />
+                </ProtectedRoute>
+              } />
+              <Route path="/register" element={
+                <ProtectedRoute requireAuth={false}>
+                  <Register />
+                </ProtectedRoute>
+              } />
+              <Route path="/forgot-password" element={
+                <ProtectedRoute requireAuth={false}>
+                  <ForgotPassword />
+                </ProtectedRoute>
+              } />
+              <Route path="/reset-password" element={
+                <ProtectedRoute requireAuth={false}>
+                  <ResetPassword />
+                </ProtectedRoute>
+              } />
               <Route path="/admin-login" element={<AdminLogin />} />
-              <Route path="/" element={<Layout />}>
+              
+              {/* Admin routes - require admin authentication */}
+              <Route path="/admin" element={
+                <ProtectedRoute requireAuth={true} requireAdmin={true}>
+                  <AdminPanel />
+                </ProtectedRoute>
+              } />
+              
+              {/* Protected routes - require authentication */}
+              <Route path="/" element={
+                <ProtectedRoute requireAuth={true}>
+                  <Layout />
+                </ProtectedRoute>
+              }>
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="credit-cards" element={<CreditCards />} />

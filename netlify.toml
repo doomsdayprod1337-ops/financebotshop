@@ -1,10 +1,19 @@
 [build]
-  command = "npm install && npm run build"
+  command = "bash netlify-build.sh"
   publish = "client/dist"
   functions = "api"
 
 [build.environment]
   NODE_VERSION = "18"
+  NPM_FLAGS = "--no-optional --prefer-offline --cache-min=9999999"
+  NPM_CONFIG_CACHE = ".npm-cache"
+  NPM_CONFIG_PREFER_OFFLINE = "true"
+  NPM_CONFIG_NO_OPTIONAL = "true"
+  NPM_CONFIG_AUDIT = "false"
+  NPM_CONFIG_FUND = "false"
+
+[build.processing]
+  skip_processing = false
 
 [[redirects]]
   from = "/api/*"
@@ -21,6 +30,15 @@
   directory = "api"
   node_bundler = "esbuild"
   external_node_modules = ["@supabase/supabase-js", "bcryptjs", "jsonwebtoken"]
+  included_files = ["api/**/*"]
 
 [[plugins]]
   package = "@netlify/plugin-functions-install-core"
+
+[build.processing.css]
+  bundle = true
+  minify = true
+
+[build.processing.js]
+  bundle = true
+  minify = true

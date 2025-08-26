@@ -5,9 +5,12 @@
   "main": "index.js",
   "scripts": {
     "dev": "cd client && npm run dev",
-    "build": "npm install && cd client && npm install && npm run build",
+    "build": "npm ci --only=production && cd client && npm ci --only=production && npm run build",
+    "build:netlify": "npm ci --prefer-offline --no-optional && cd client && npm ci --prefer-offline --no-optional && npm run build",
     "preview": "cd client && npm run preview",
-    "install-all": "npm install && cd client && npm install"
+    "install-all": "npm install && cd client && npm install",
+    "clean": "rm -rf node_modules client/node_modules .npm-cache",
+    "setup": "npm install && cd client && npm install"
   },
   "keywords": [
     "marketplace",
@@ -27,5 +30,9 @@
     "@supabase/supabase-js": "^2.56.0",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }

@@ -28,6 +28,23 @@ const Dashboard = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10); // Show only 10 countries at a time
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter countries based on search
+  const filteredCountries = botStats.countries.filter(country =>
+    country.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    getCountryName(country.code).toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Paginate countries to reduce network requests
+  const paginatedCountries = filteredCountries.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const totalPages = Math.ceil(filteredCountries.length / itemsPerPage);
 
   useEffect(() => {
     // In a real app, you'd fetch this data from your API
@@ -125,9 +142,11 @@ const Dashboard = () => {
               <input
                 type="text"
                 placeholder="Search countries..."
+                value={searchQuery}
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 onChange={(e) => {
-                  // Add search functionality here if needed
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1); // Reset to first page when searching
                 }}
               />
             </div>
@@ -198,7 +217,7 @@ const Dashboard = () => {
               </tr>
 
               {/* Country Rows */}
-              {botStats.countries.map((country, index) => (
+              {paginatedCountries.map((country, index) => (
                 <tr key={country.code} className="hover:bg-gray-700 transition-colors group">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -242,6 +261,36 @@ const Dashboard = () => {
             </tbody>
           </table>
         </div>
+        
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="bg-gray-750 px-6 py-4 border-t border-gray-700">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-400">
+                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredCountries.length)} of {filteredCountries.length} countries
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2 text-sm bg-gray-700 text-white rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Previous
+                </button>
+                <span className="px-3 py-2 text-sm text-gray-400">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-2 text-sm bg-gray-700 text-white rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Quick Actions */}

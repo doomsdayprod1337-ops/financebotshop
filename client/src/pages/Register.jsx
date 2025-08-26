@@ -20,6 +20,7 @@ const Register = () => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState(''); // 'success' or 'error'
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -89,6 +90,7 @@ const Register = () => {
 
     setIsLoading(true);
     setMessage('');
+    setMessageType('');
 
     try {
       const response = await api.post('/api/register', {
@@ -100,6 +102,7 @@ const Register = () => {
       });
 
       setMessage('Registration successful! Redirecting to login...');
+      setMessageType('success');
       
       // Store token if needed
       if (response.data.token) {
@@ -114,11 +117,39 @@ const Register = () => {
     } catch (error) {
       console.error('Registration error:', error);
       
+      let errorMessage = 'Registration failed. Please try again.';
+      
       if (error.response?.data?.error) {
-        setMessage(error.response.data.error);
-      } else {
-        setMessage('Registration failed. Please try again.');
+        // API returned a specific error
+        errorMessage = error.response.data.error;
+      } else if (error.response?.data?.message) {
+        // API returned a message field
+        errorMessage = error.response.data.message;
+      } else if (error.response?.status === 400) {
+        errorMessage = 'Invalid registration data. Please check your information.';
+      } else if (error.response?.status === 409) {
+        errorMessage = 'Username or email already exists. Please choose different credentials.';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Invalid invite code. Please check your invite code and try again.';
+      } else if (error.response?.status === 422) {
+        errorMessage = 'Validation failed. Please check your input and try again.';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
+      } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (error.message) {
+        // Use the error message if available
+        errorMessage = error.message;
       }
+      
+      setMessage(errorMessage);
+      setMessageType('error');
+      
+      // Auto-clear error messages after 8 seconds
+      setTimeout(() => {
+        setMessage('');
+        setMessageType('');
+      }, 8000);
     } finally {
       setIsLoading(false);
     }
@@ -345,16 +376,45 @@ const Register = () => {
             </div>
           </div>
 
-          {/* Message Display */}
-          {message && (
-            <div className={`text-center p-3 rounded-md ${
-              message.includes('successful') 
-                ? 'bg-green-900 text-green-300 border border-green-700' 
-                : 'bg-red-900 text-red-300 border border-red-700'
-            }`}>
-              {message}
-            </div>
-          )}
+                                {/* Message Display */}
+            {message && (
+              <div className={`text-center p-4 rounded-lg border-2 relative ${
+                messageType === 'success'
+                  ? 'bg-green-900/50 text-green-300 border-green-500 shadow-lg' 
+                  : 'bg-red-900/50 text-red-300 border-red-500 shadow-lg'
+              }`}>
+                {/* Dismiss Button */}
+                <button
+                  onClick={() => {
+                    setMessage('');
+                    setMessageType('');
+                  }}
+                  className={`absolute top-2 right-2 p-1 rounded-full hover:bg-opacity-20 ${
+                    messageType === 'success' 
+                      ? 'hover:bg-green-400 text-green-300' 
+                      : 'hover:bg-red-400 text-red-300'
+                  }`}
+                  aria-label="Dismiss message"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                
+                <div className="flex items-center justify-center space-x-2">
+                  {messageType === 'success' ? (
+                    <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
+                  <span className="font-medium">{message}</span>
+                </div>
+              </div>
+            )}
 
           {/* Submit Button */}
           <button

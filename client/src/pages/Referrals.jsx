@@ -34,7 +34,7 @@ const Referrals = () => {
       };
 
       // Fetch referrals
-      const referralsResponse = await axios.get('/api/auth/referrals', config);
+      const referralsResponse = await axios.get('/api/referrals', config);
       setReferrals(referralsResponse.data.referrals || []);
 
       // Calculate stats

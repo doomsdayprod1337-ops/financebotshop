@@ -1,20 +1,20 @@
-import { createClient } from '@supabase/supabase-js';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+const { createClient } = require('@supabase/supabase-js');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
 );
 
-export const handler = async function(event, context) {
+exports.handler = async function(event, context) {
   // Handle CORS
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Headers': 'Content-Type',
         'Access-Control-Allow-Methods': 'POST, OPTIONS'
       }
     };
@@ -33,88 +33,196 @@ export const handler = async function(event, context) {
   }
 
   try {
-    const { email, password } = JSON.parse(event.body);
-
+    console.log('=== LOGIN API START ===');
+    
+    // Parse request body
+    const body = JSON.parse(event.body || '{}');
+    const { email, username, password } = body;
+    
+    // Check if user provided either email or username
+    const loginIdentifier = email || username;
+    console.log('Login attempt for:', loginIdentifier, 'Type:', email ? 'email' : 'username');
+    
     // Validate input
-    if (!email || !password) {
+    if (!loginIdentifier || !password) {
+      console.log('Missing login identifier or password');
       return {
         statusCode: 400,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*'
         },
-        body: JSON.stringify({ error: 'Email and password are required' })
+        body: JSON.stringify({ 
+          error: 'Login identifier (email or username) and password are required',
+          success: false
+        })
       };
     }
 
-    console.log('Login attempt for:', email);
-
-    // Find user by email
-    const { data: user, error: userError } = await supabase
+    // Find user by email or username
+    console.log('Looking up user in database...');
+    let { data: user, error: userError } = await supabase
       .from('users')
       .select('*')
-      .eq('email', email)
+      .or(`email.eq.${loginIdentifier},username.eq.${loginIdentifier}`)
       .single();
 
+    // If the OR query fails, try separate queries
+    if (userError) {
+      console.log('OR query failed, trying separate queries...');
+      console.log('OR query error:', userError);
+      
+      // Try email first
+      let emailResult = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', loginIdentifier)
+        .single();
+      
+      if (emailResult.data && !emailResult.error) {
+        user = emailResult.data;
+        userError = null;
+        console.log('User found by email');
+      } else {
+        // Try username
+        let usernameResult = await supabase
+          .from('users')
+          .select('*')
+          .eq('username', loginIdentifier)
+          .single();
+        
+        if (usernameResult.data && !usernameResult.error) {
+          user = usernameResult.data;
+          userError = null;
+          console.log('User found by username');
+        } else {
+          userError = usernameResult.error;
+          console.log('User not found by either email or username');
+        }
+      }
+    }
+
     if (userError || !user) {
-      console.log('User not found:', email);
+      console.log('User not found:', loginIdentifier);
       return {
         statusCode: 401,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*'
         },
-        body: JSON.stringify({ error: 'Invalid credentials' })
+        body: JSON.stringify({ 
+          error: 'Invalid credentials',
+          success: false
+        })
       };
     }
 
+    console.log('User found:', { id: user.id, username: user.username, email: user.email });
+
     // Check if user is active
-    if (user.status !== 'active') {
+    if (user.status && user.status !== 'active') {
+      console.log('User account not active:', user.status);
       return {
         statusCode: 401,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*'
         },
-        body: JSON.stringify({ error: 'Account is not active' })
+        body: JSON.stringify({ 
+          error: 'Account is not active',
+          success: false
+        })
       };
     }
 
     // Verify password
+    console.log('Verifying password...');
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
-      console.log('Invalid password for:', email);
+      console.log('Invalid password for user:', loginIdentifier);
       return {
         statusCode: 401,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*'
         },
-        body: JSON.stringify({ error: 'Invalid credentials' })
+        body: JSON.stringify({ 
+          error: 'Invalid credentials',
+          success: false
+        })
       };
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-        username: user.username,
-        isAdmin: user.is_admin || false
-      },
-      process.env.JWT_SECRET || 'fallback-secret-key',
-      { expiresIn: '24h' }
-    );
+    console.log('Password verified successfully');
 
-    // Update last login
-    await supabase
-      .from('users')
-      .update({ last_login: new Date().toISOString() })
-      .eq('id', user.id);
+    // Determine admin status
+    const isAdmin = user.is_admin || user.role === 'admin' || user.admin || false;
+    console.log('Admin status:', isAdmin);
 
-    console.log('Login successful for:', email);
+    // Create JWT token
+    const jwtSecret = process.env.JWT_SECRET;
+    console.log('JWT secret exists:', !!jwtSecret);
+    console.log('JWT secret length:', jwtSecret ? jwtSecret.length : 0);
+    
+    if (!jwtSecret) {
+      console.error('JWT_SECRET environment variable is not set!');
+      return {
+        statusCode: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ 
+          error: 'Server configuration error',
+          message: 'JWT secret not configured',
+          success: false
+        })
+      };
+    }
+    
+    const tokenPayload = {
+      userId: user.id,
+      email: user.email,
+      username: user.username,
+      is_admin: isAdmin
+    };
 
-    // Return success response
+    console.log('Creating JWT with payload:', tokenPayload);
+    console.log('User ID being stored in JWT:', user.id);
+    console.log('User ID type:', typeof user.id);
+    
+    const token = jwt.sign(tokenPayload, jwtSecret, { expiresIn: '1h' });
+    console.log('JWT token created successfully, length:', token.length);
+
+    // Update last login (don't fail if this fails)
+    try {
+      await supabase
+        .from('users')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', user.id);
+      console.log('Last login updated successfully');
+    } catch (updateError) {
+      console.log('Failed to update last_login (non-critical):', updateError.message);
+    }
+
+    // Prepare user response
+    const userResponse = {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      is_admin: isAdmin,
+      wallet_balance: user.wallet_balance || 0,
+      status: user.status || 'active',
+      referral_code: user.referral_code,
+      is_verified: user.is_verified || false,
+      telegram_username: user.telegram_username,
+      last_login: user.last_login
+    };
+
+    console.log('Login successful, returning user data:', userResponse);
+    console.log('Wallet balance synced:', userResponse.wallet_balance);
+    console.log('=== LOGIN API END ===');
+
     return {
       statusCode: 200,
       headers: {
@@ -125,18 +233,16 @@ export const handler = async function(event, context) {
         success: true,
         message: 'Login successful',
         token: token,
-        user: {
-          id: user.id,
-          email: user.email,
-          username: user.username,
-          isAdmin: user.is_admin || false,
-          wallet_balance: user.wallet_balance || 0
-        }
+        user: userResponse
       })
     };
 
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('=== LOGIN API ERROR ===');
+    console.error('Error details:', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    
     return {
       statusCode: 500,
       headers: {
@@ -145,7 +251,8 @@ export const handler = async function(event, context) {
       },
       body: JSON.stringify({ 
         error: 'Internal server error',
-        message: 'Login failed. Please try again.' 
+        message: 'Login failed. Please try again.',
+        success: false
       })
     };
   }

@@ -6,376 +6,234 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY
 );
 
-// Middleware to check if user is admin
-function requireAdmin(req, res, next) {
+// Middleware to verify admin access
+function requireAdmin(event) {
   try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    if (!token) {
-      return res.status(401).json({ error: 'Authentication required' });
+    const authHeader = event.headers.authorization || event.headers.Authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new Error('No token provided');
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-key');
+    
+    if (!decoded.is_admin) {
+      throw new Error('Admin access required');
     }
     
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
-    if (decoded.role !== 'admin') {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-    
-    req.user = decoded;
-    next();
+    return decoded;
   } catch (error) {
-    return res.status(401).json({ error: 'Invalid token' });
+    throw error;
   }
 }
 
-export default async function handler(req, res) {
-  try {
-    // Apply admin middleware to all routes
-    requireAdmin(req, res, async () => {
-      switch (req.method) {
-        case 'GET':
-          if (req.url.includes('/dashboard')) {
-            return await handleDashboard(req, res);
-          } else if (req.url.includes('/users')) {
-            return await handleGetUsers(req, res);
-          } else if (req.url.includes('/orders')) {
-            return await handleGetOrders(req, res);
-          } else if (req.url.includes('/settings')) {
-            return await handleGetSettings(req, res);
-          }
-          break;
-          
-        case 'POST':
-          if (req.url.includes('/users/update')) {
-            return await handleUpdateUser(req, res);
-          } else if (req.url.includes('/users/delete')) {
-            return await handleDeleteUser(req, res);
-          } else if (req.url.includes('/settings/update')) {
-            return await handleUpdateSettings(req, res);
-          }
-          break;
-          
-        default:
-          res.setHeader('Allow', ['GET', 'POST']);
-          return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
+exports.handler = async function(event, context) {
+  // Handle CORS
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
       }
-    });
+    };
+  }
+
+  try {
+    // Verify admin access
+    const user = requireAdmin(event);
+    console.log('Admin access verified for user:', user.userId);
+
+    const { path } = event;
+    const pathSegments = path.split('/').filter(Boolean);
+    
+    // Extract the specific endpoint
+    const endpoint = pathSegments[pathSegments.length - 1];
+    
+    console.log('Admin API: Endpoint requested:', endpoint);
+
+    switch (endpoint) {
+      case 'users':
+        return await handleUsers(event);
+      case 'products':
+        return await handleProducts(event);
+      case 'tickets':
+        return await handleTickets(event);
+      default:
+        return {
+          statusCode: 404,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({ error: 'Admin endpoint not found' })
+        };
+    }
+
   } catch (error) {
     console.error('Admin API Error:', error);
-    return res.status(500).json({ 
-      error: 'Internal server error',
-      message: error.message 
-    });
-  }
-}
-
-// Dashboard Statistics
-async function handleDashboard(req, res) {
-  try {
-    // Get total users
-    const { count: totalUsers } = await supabase
-      .from('users')
-      .select('*', { count: 'exact', head: true });
     
-    // Get total orders
-    const { count: totalOrders } = await supabase
-      .from('orders')
-      .select('*', { count: 'exact', head: true });
+    if (error.message === 'No token provided' || error.message === 'Admin access required') {
+      return {
+        statusCode: 401,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'Unauthorized', message: error.message })
+      };
+    }
     
-    // Get total revenue
-    const { data: orders } = await supabase
-      .from('orders')
-      .select('total_amount, status')
-      .eq('status', 'completed');
-    
-    const totalRevenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
-    
-    // Get recent users
-    const { data: recentUsers } = await supabase
-      .from('users')
-      .select('id, username, email, created_at, status')
-      .order('created_at', { ascending: false })
-      .limit(5);
-    
-    // Get recent orders
-    const { data: recentOrders } = await supabase
-      .from('orders')
-      .select('id, user_id, total_amount, status, created_at')
-      .order('created_at', { ascending: false })
-      .limit(5);
-    
-    res.status(200).json({
-      stats: {
-        totalUsers: totalUsers || 0,
-        totalOrders: totalOrders || 0,
-        totalRevenue: totalRevenue.toFixed(2),
-        activeUsers: recentUsers?.filter(u => u.status === 'active').length || 0
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
       },
-      recentUsers: recentUsers || [],
-      recentOrders: recentOrders || []
-    });
+      body: JSON.stringify({ error: 'Internal server error' })
+    };
+  }
+};
+
+async function handleUsers(event) {
+  try {
+    if (event.httpMethod === 'GET') {
+      // Get all users
+      const { data: users, error } = await supabase
+        .from('users')
+        .select('id, email, username, role, status, created_at, last_login')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+          success: true,
+          users: users || []
+        })
+      };
+    } else if (event.httpMethod === 'PUT') {
+      // Update user status
+      const body = JSON.parse(event.body || '{}');
+      const { userId, status } = body;
+
+      if (!userId || !status) {
+        return {
+          statusCode: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({ error: 'User ID and status are required' })
+        };
+      }
+
+      const { error } = await supabase
+        .from('users')
+        .update({ status })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+          success: true,
+          message: 'User status updated successfully'
+        })
+      };
+    } else {
+      return {
+        statusCode: 405,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'Method not allowed' })
+      };
+    }
   } catch (error) {
-    console.error('Dashboard error:', error);
-    res.status(500).json({ error: 'Failed to get dashboard data' });
+    throw error;
   }
 }
 
-// Get All Users
-async function handleGetUsers(req, res) {
+async function handleProducts(event) {
   try {
-    const { page = 1, limit = 20, search = '', status = '', role = '' } = req.query;
-    const offset = (page - 1) * limit;
-    
-    let query = supabase
-      .from('users')
-      .select('id, username, email, role, status, wallet_balance, total_spent, created_at, last_login')
-      .order('created_at', { ascending: false });
-    
-    // Apply filters
-    if (search) {
-      query = query.or(`username.ilike.%${search}%,email.ilike.%${search}%`);
+    if (event.httpMethod === 'GET') {
+      // Mock products data
+      const products = [
+        { id: 1, name: 'Premium Credit Cards', category: 'Cards', price: 50.00, stock: 100, status: 'active' },
+        { id: 2, name: 'Bot Dumps', category: 'Bots', price: 25.00, stock: 50, status: 'active' },
+        { id: 3, name: 'Malware Tools', category: 'Tools', price: 75.00, stock: 25, status: 'active' }
+      ];
+
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+          success: true,
+          products: products
+        })
+      };
+    } else {
+      return {
+        statusCode: 405,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'Method not allowed' })
+      };
     }
-    
-    if (status) {
-      query = query.eq('status', status);
-    }
-    
-    if (role) {
-      query = query.eq('role', role);
-    }
-    
-    // Get paginated results
-    const { data: users, error, count } = await query
-      .range(offset, offset + limit - 1)
-      .select('*', { count: 'exact' });
-    
-    if (error) throw error;
-    
-    res.status(200).json({
-      users: users || [],
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total: count || 0,
-        pages: Math.ceil((count || 0) / limit)
-      }
-    });
   } catch (error) {
-    console.error('Get users error:', error);
-    res.status(500).json({ error: 'Failed to get users' });
+    throw error;
   }
 }
 
-// Update User
-async function handleUpdateUser(req, res) {
+async function handleTickets(event) {
   try {
-    const { userId, updates } = req.body;
-    
-    if (!userId || !updates) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-    
-    // Validate updates
-    const allowedUpdates = ['status', 'role', 'wallet_balance'];
-    const validUpdates = {};
-    
-    Object.keys(updates).forEach(key => {
-      if (allowedUpdates.includes(key)) {
-        validUpdates[key] = updates[key];
-      }
-    });
-    
-    if (Object.keys(validUpdates).length === 0) {
-      return res.status(400).json({ error: 'No valid updates provided' });
-    }
-    
-    validUpdates.updated_at = new Date().toISOString();
-    
-    const { data: user, error } = await supabase
-      .from('users')
-      .update(validUpdates)
-      .eq('id', userId)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    
-    res.status(200).json({
-      message: 'User updated successfully',
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        status: user.status,
-        wallet_balance: user.wallet_balance
-      }
-    });
-  } catch (error) {
-    console.error('Update user error:', error);
-    res.status(500).json({ error: 'Failed to update user' });
-  }
-}
+    if (event.httpMethod === 'GET') {
+      // Mock tickets data
+      const tickets = [
+        { id: 1, user: 'user1@example.com', subject: 'Payment Issue', status: 'open', priority: 'high', created_at: new Date().toISOString() },
+        { id: 2, user: 'user2@example.com', subject: 'Download Problem', status: 'closed', priority: 'medium', created_at: new Date().toISOString() }
+      ];
 
-// Delete User
-async function handleDeleteUser(req, res) {
-  try {
-    const { userId } = req.body;
-    
-    if (!userId) {
-      return res.status(400).json({ error: 'User ID is required' });
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+          success: true,
+          tickets: tickets
+        })
+      };
+    } else {
+      return {
+        statusCode: 405,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'Method not allowed' })
+      };
     }
-    
-    // Check if user exists
-    const { data: user } = await supabase
-      .from('users')
-      .select('id, role')
-      .eq('id', userId)
-      .single();
-    
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    
-    // Prevent deleting admin users
-    if (user.role === 'admin') {
-      return res.status(403).json({ error: 'Cannot delete admin users' });
-    }
-    
-    // Soft delete - update status to deleted
-    const { error } = await supabase
-      .from('users')
-      .update({ 
-        status: 'deleted',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userId);
-    
-    if (error) throw error;
-    
-    res.status(200).json({ message: 'User deleted successfully' });
   } catch (error) {
-    console.error('Delete user error:', error);
-    res.status(500).json({ error: 'Failed to delete user' });
-  }
-}
-
-// Get All Orders
-async function handleGetOrders(req, res) {
-  try {
-    const { page = 1, limit = 20, status = '', userId = '' } = req.query;
-    const offset = (page - 1) * limit;
-    
-    let query = supabase
-      .from('orders')
-      .select(`
-        *,
-        user:users!orders_user_id_fkey(username, email)
-      `)
-      .order('created_at', { ascending: false });
-    
-    // Apply filters
-    if (status) {
-      query = query.eq('status', status);
-    }
-    
-    if (userId) {
-      query = query.eq('user_id', userId);
-    }
-    
-    // Get paginated results
-    const { data: orders, error, count } = await query
-      .range(offset, offset + limit - 1)
-      .select('*', { count: 'exact' });
-    
-    if (error) throw error;
-    
-    res.status(200).json({
-      orders: orders || [],
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total: count || 0,
-        pages: Math.ceil((count || 0) / limit)
-      }
-    });
-  } catch (error) {
-    console.error('Get orders error:', error);
-    res.status(500).json({ error: 'Failed to get orders' });
-  }
-}
-
-// Get System Settings
-async function handleGetSettings(req, res) {
-  try {
-    const { data: settings, error } = await supabase
-      .from('system_settings')
-      .select('*')
-      .single();
-    
-    if (error && error.code !== 'PGRST116') throw error;
-    
-    res.status(200).json({
-      settings: settings || {
-        site_name: 'Genesis Market',
-        maintenance_mode: false,
-        registration_enabled: true,
-        invite_required: true,
-        referral_bonus: 10.00,
-        max_invites_per_user: 5
-      }
-    });
-  } catch (error) {
-    console.error('Get settings error:', error);
-    res.status(500).json({ error: 'Failed to get settings' });
-  }
-}
-
-// Update System Settings
-async function handleUpdateSettings(req, res) {
-  try {
-    const { settings } = req.body;
-    
-    if (!settings) {
-      return res.status(400).json({ error: 'Settings are required' });
-    }
-    
-    // Validate settings
-    const allowedSettings = [
-      'site_name',
-      'maintenance_mode',
-      'registration_enabled',
-      'invite_required',
-      'referral_bonus',
-      'max_invites_per_user'
-    ];
-    
-    const validSettings = {};
-    Object.keys(settings).forEach(key => {
-      if (allowedSettings.includes(key)) {
-        validSettings[key] = settings[key];
-      }
-    });
-    
-    if (Object.keys(validSettings).length === 0) {
-      return res.status(400).json({ error: 'No valid settings provided' });
-    }
-    
-    validSettings.updated_at = new Date().toISOString();
-    
-    // Upsert settings
-    const { data: updatedSettings, error } = await supabase
-      .from('system_settings')
-      .upsert(validSettings)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    
-    res.status(200).json({
-      message: 'Settings updated successfully',
-      settings: updatedSettings
-    });
-  } catch (error) {
-    console.error('Update settings error:', error);
-    res.status(500).json({ error: 'Failed to update settings' });
+    throw error;
   }
 }

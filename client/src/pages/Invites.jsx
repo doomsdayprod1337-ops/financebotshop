@@ -45,13 +45,12 @@ const Invites = () => {
         headers: { Authorization: `Bearer ${token}` }
       };
 
-      // Fetch invites
-      const invitesResponse = await axios.get('/api/auth/invites', config);
-      setInvites(invitesResponse.data.invites || []);
-
-      // Fetch referrals
-      const referralsResponse = await axios.get('/api/auth/referrals', config);
-      setReferrals(referralsResponse.data.referrals || []);
+      // Fetch existing invites and referrals
+      const invitesResponse = await axios.get('/api/invites', config);
+      const invites = invitesResponse.data.invites || [];
+      
+      const referralsResponse = await axios.get('/api/referrals', config);
+      const referrals = referralsResponse.data.referrals || [];
 
       // Calculate stats
       const totalInvites = invitesResponse.data.invites?.length || 0;
@@ -104,10 +103,10 @@ const Invites = () => {
         expiryDays: parseInt(inviteExpiry)
       };
 
-      const response = await axios.post('/api/auth/invite', 
-        inviteData,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await axios.post('/api/invites', {
+        email: selectedInviteType === 'email' ? newInviteEmail.trim() : null,
+        expiryDays: parseInt(inviteExpiry)
+      }, { headers: { Authorization: `Bearer ${token}` } });
 
       setNewInviteEmail('');
       setShowCreateInvite(false);

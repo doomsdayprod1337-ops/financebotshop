@@ -35,16 +35,10 @@ const AdminLogin = () => {
     setError('');
 
     try {
-      const response = await api.post('/api/login', {
+      const response = await api.post('/api/admin-login', {
         email: credentials.email,
         password: credentials.password
       });
-      
-      // Check if user is admin
-      if (!response.data.user.isAdmin) {
-        setError('Access denied. Admin privileges required.');
-        return;
-      }
       
       // Store token and user data
       localStorage.setItem('token', response.data.token);
