@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import CountryFlag from '../components/CountryFlag';
 import { getCountryName, FLAG_SIZES } from '../utils/flags';
 
 const Bots = () => {
+  const navigate = useNavigate();
   const [bots, setBots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -162,6 +164,10 @@ const Bots = () => {
     }
   };
 
+  const handleViewBot = (botId) => {
+    navigate(`/bot/${botId}`);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -313,9 +319,12 @@ const Bots = () => {
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-blue-400 hover:text-blue-300 cursor-pointer">
+                        <button
+                          onClick={() => handleViewBot(bot.id)}
+                          className="text-sm font-medium text-blue-400 hover:text-blue-300 cursor-pointer hover:underline"
+                        >
                           {bot.name}
-                        </p>
+                        </button>
                         <p className="text-xs text-gray-400 font-mono">
                           {bot.id}
                         </p>
@@ -449,7 +458,10 @@ const Bots = () => {
                   {/* Actions */}
                   <td className="px-6 py-4">
                     <div className="flex flex-col space-y-2">
-                      <button className="p-2 bg-blue-600 hover:bg-blue-700 rounded text-xs transition-colors">
+                      <button 
+                        onClick={() => handleViewBot(bot.id)}
+                        className="p-2 bg-blue-600 hover:bg-blue-700 rounded text-xs transition-colors"
+                      >
                         👁️ View
                       </button>
                       <button className="p-2 bg-green-600 hover:bg-green-700 rounded text-xs transition-colors">

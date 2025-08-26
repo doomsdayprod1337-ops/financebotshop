@@ -11,6 +11,7 @@ import ResetPassword from './pages/ResetPassword.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import CreditCards from './pages/CreditCards.jsx';
 import Bots from './pages/Bots.jsx';
+import BotDetails from './pages/BotDetails.jsx';
 import Services from './pages/Services.jsx';
 import GenesisWiki from './pages/GenesisWiki.jsx';
 import News from './pages/News.jsx';
@@ -74,6 +75,7 @@ function App() {
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="credit-cards" element={<CreditCards />} />
                 <Route path="bots" element={<Bots />} />
+                <Route path="bot/:botId" element={<BotDetails />} />
                 <Route path="services" element={<Services />} />
                 <Route path="wiki" element={<GenesisWiki />} />
                 <Route path="genesis-wiki" element={<GenesisWiki />} />
