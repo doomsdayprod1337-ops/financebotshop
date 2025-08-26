@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { getFlagUrl, getCountryName, FLAG_SIZES } from '../utils/flags';
 
 const CountryFlag = ({ 
@@ -10,15 +10,27 @@ const CountryFlag = ({
   onClick = null,
   fallbackToUS = true
 }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  
   const countryName = getCountryName(countryCode);
   const flagUrl = getFlagUrl(countryCode, size);
   const fallbackUrl = fallbackToUS ? getFlagUrl('US', size) : null;
 
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+    setImageError(false);
+  };
+
   const handleImageError = (e) => {
-    if (fallbackToUS && fallbackUrl) {
+    setImageError(true);
+    setImageLoaded(false);
+    
+    if (fallbackToUS && fallbackUrl && e.target.src !== fallbackUrl) {
+      // Try fallback only once to prevent infinite loops
       e.target.src = fallbackUrl;
     } else {
-      // Hide broken image
+      // Hide broken image after fallback attempt
       e.target.style.display = 'none';
     }
   };
@@ -27,15 +39,19 @@ const CountryFlag = ({
     <img
       src={flagUrl}
       alt={`${countryName} flag`}
-      className={`rounded ${onClick ? 'cursor-pointer hover:opacity-80' : ''} ${className}`}
+      className={`rounded ${onClick ? 'cursor-pointer hover:opacity-80' : ''} ${className} ${
+        !imageLoaded ? 'opacity-0' : 'opacity-100'
+      } transition-opacity duration-200`}
       style={{ 
         width: `${size}px`, 
         height: `${size}px`,
         objectFit: 'cover'
       }}
+      onLoad={handleImageLoad}
       onError={handleImageError}
       onClick={onClick}
       title={showTooltip ? countryName : undefined}
+      loading="lazy" // Add lazy loading to reduce initial network requests
     />
   );
 

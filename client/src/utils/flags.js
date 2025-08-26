@@ -196,10 +196,6 @@ export const countryFlags = {
   BS: { name: 'Bahamas', code: 'bs', region: 'Caribbean' },
   
   // Special Territories & Dependencies
-  HK: { name: 'Hong Kong', code: 'hk', region: 'Asia' },
-  MO: { name: 'Macau', code: 'mo', region: 'Asia' },
-  TW: { name: 'Taiwan', code: 'tw', region: 'Asia' },
-  PR: { name: 'Puerto Rico', code: 'pr', region: 'Caribbean' },
   GU: { name: 'Guam', code: 'gu', region: 'Oceania' },
   MP: { name: 'Northern Mariana Islands', code: 'mp', region: 'Oceania' },
   AS: { name: 'American Samoa', code: 'as', region: 'Oceania' },
@@ -216,8 +212,6 @@ export const countryFlags = {
   NU: { name: 'Niue', code: 'nu', region: 'Oceania' },
   TK: { name: 'Tokelau', code: 'tk', region: 'Oceania' },
   WF: { name: 'Wallis and Futuna', code: 'wf', region: 'Oceania' },
-  NC: { name: 'New Caledonia', code: 'nc', region: 'Oceania' },
-  PF: { name: 'French Polynesia', code: 'pf', region: 'Oceania' },
   RE: { name: 'Réunion', code: 're', region: 'Africa' },
   YT: { name: 'Mayotte', code: 'yt', region: 'Africa' },
   GP: { name: 'Guadeloupe', code: 'gp', region: 'Caribbean' },
@@ -239,122 +233,6 @@ export const countryFlags = {
   AI: { name: 'Anguilla', code: 'ai', region: 'Caribbean' },
   MS: { name: 'Montserrat', code: 'ms', region: 'Caribbean' },
   BM: { name: 'Bermuda', code: 'bm', region: 'North America' },
-  GI: { name: 'Gibraltar', code: 'gi', region: 'Europe' },
-  AD: { name: 'Andorra', code: 'ad', region: 'Europe' },
-  MC: { name: 'Monaco', code: 'mc', region: 'Europe' },
-  LI: { name: 'Liechtenstein', code: 'li', region: 'Europe' },
-  SM: { name: 'San Marino', code: 'sm', region: 'Europe' },
-  VA: { name: 'Vatican City', code: 'va', region: 'Europe' },
-  MT: { name: 'Malta', code: 'mt', region: 'Europe' },
-  CY: { name: 'Cyprus', code: 'cy', region: 'Europe' },
-  IS: { name: 'Iceland', code: 'is', region: 'Europe' },
-  NO: { name: 'Norway', code: 'no', region: 'Europe' },
-  SE: { name: 'Sweden', code: 'se', region: 'Europe' },
-  FI: { name: 'Finland', code: 'fi', region: 'Europe' },
-  DK: { name: 'Denmark', code: 'dk', region: 'Europe' },
-  EE: { name: 'Estonia', code: 'ee', region: 'Europe' },
-  LV: { name: 'Latvia', code: 'lv', region: 'Europe' },
-  LT: { name: 'Lithuania', code: 'lt', region: 'Europe' },
-  PL: { name: 'Poland', code: 'pl', region: 'Europe' },
-  CZ: { name: 'Czech Republic', code: 'cz', region: 'Europe' },
-  SK: { name: 'Slovakia', code: 'sk', region: 'Europe' },
-  HU: { name: 'Hungary', code: 'hu', region: 'Europe' },
-  RO: { name: 'Romania', code: 'ro', region: 'Europe' },
-  BG: { name: 'Bulgaria', code: 'bg', region: 'Europe' },
-  HR: { name: 'Croatia', code: 'hr', region: 'Europe' },
-  SI: { name: 'Slovenia', code: 'si', region: 'Europe' },
-  RS: { name: 'Serbia', code: 'rs', region: 'Europe' },
-  ME: { name: 'Montenegro', code: 'me', region: 'Europe' },
-  BA: { name: 'Bosnia and Herzegovina', code: 'ba', region: 'Europe' },
-  MK: { name: 'North Macedonia', code: 'mk', region: 'Europe' },
-  AL: { name: 'Albania', code: 'al', region: 'Europe' },
-  GR: { name: 'Greece', code: 'gr', region: 'Europe' },
-  TR: { name: 'Turkey', code: 'tr', region: 'Europe' },
-  GE: { name: 'Georgia', code: 'ge', region: 'Europe' },
-  AM: { name: 'Armenia', code: 'am', region: 'Europe' },
-  AZ: { name: 'Azerbaijan', code: 'az', region: 'Europe' },
-  RU: { name: 'Russia', code: 'ru', region: 'Europe' },
-  BY: { name: 'Belarus', code: 'by', region: 'Europe' },
-  UA: { name: 'Ukraine', code: 'ua', region: 'Europe' },
-  MD: { name: 'Moldova', code: 'md', region: 'Europe' },
-  KZ: { name: 'Kazakhstan', code: 'kz', region: 'Asia' },
-  UZ: { name: 'Uzbekistan', code: 'uz', region: 'Asia' },
-  KG: { name: 'Kyrgyzstan', code: 'kg', region: 'Asia' },
-  TJ: { name: 'Tajikistan', code: 'tj', region: 'Asia' },
-  TM: { name: 'Turkmenistan', code: 'tm', region: 'Asia' },
-  AF: { name: 'Afghanistan', code: 'af', region: 'Asia' },
-  PK: { name: 'Pakistan', code: 'pk', region: 'Asia' },
-  IN: { name: 'India', code: 'in', region: 'Asia' },
-  BD: { name: 'Bangladesh', code: 'bd', region: 'Asia' },
-  NP: { name: 'Nepal', code: 'np', region: 'Asia' },
-  BT: { name: 'Bhutan', code: 'bt', region: 'Asia' },
-  MM: { name: 'Myanmar', code: 'mm', region: 'Asia' },
-  TH: { name: 'Thailand', code: 'th', region: 'Asia' },
-  LA: { name: 'Laos', code: 'la', region: 'Asia' },
-  VN: { name: 'Vietnam', code: 'vn', region: 'Asia' },
-  KH: { name: 'Cambodia', code: 'kh', region: 'Asia' },
-  MY: { name: 'Malaysia', code: 'my', region: 'Asia' },
-  SG: { name: 'Singapore', code: 'sg', region: 'Asia' },
-  BN: { name: 'Brunei', code: 'bn', region: 'Asia' },
-  ID: { name: 'Indonesia', code: 'id', region: 'Asia' },
-  PH: { name: 'Philippines', code: 'ph', region: 'Asia' },
-  TL: { name: 'Timor-Leste', code: 'tl', region: 'Asia' },
-  PG: { name: 'Papua New Guinea', code: 'pg', region: 'Oceania' },
-  FJ: { name: 'Fiji', code: 'fj', region: 'Oceania' },
-  VU: { name: 'Vanuatu', code: 'vu', region: 'Oceania' },
-  NC: { name: 'New Caledonia', code: 'nc', region: 'Oceania' },
-  PF: { name: 'French Polynesia', code: 'pf', region: 'Oceania' },
-  WS: { name: 'Samoa', code: 'ws', region: 'Oceania' },
-  TO: { name: 'Tonga', code: 'to', region: 'Oceania' },
-  CK: { name: 'Cook Islands', code: 'ck', region: 'Oceania' },
-  NU: { name: 'Niue', code: 'nu', region: 'Oceania' },
-  TK: { name: 'Tokelau', code: 'tk', region: 'Oceania' },
-  WF: { name: 'Wallis and Futuna', code: 'wf', region: 'Oceania' },
-  KI: { name: 'Kiribati', code: 'ki', region: 'Oceania' },
-  TV: { name: 'Tuvalu', code: 'tv', region: 'Oceania' },
-  NR: { name: 'Nauru', code: 'nr', region: 'Oceania' },
-  MH: { name: 'Marshall Islands', code: 'mh', region: 'Oceania' },
-  FM: { name: 'Micronesia', code: 'fm', region: 'Oceania' },
-  PW: { name: 'Palau', code: 'pw', region: 'Oceania' },
-  GU: { name: 'Guam', code: 'gu', region: 'Oceania' },
-  MP: { name: 'Northern Mariana Islands', code: 'mp', region: 'Oceania' },
-  AS: { name: 'American Samoa', code: 'as', region: 'Oceania' },
-  PR: { name: 'Puerto Rico', code: 'pr', region: 'Caribbean' },
-  VI: { name: 'U.S. Virgin Islands', code: 'vi', region: 'Caribbean' },
-  CU: { name: 'Cuba', code: 'cu', region: 'Caribbean' },
-  JM: { name: 'Jamaica', code: 'jm', region: 'Caribbean' },
-  HT: { name: 'Haiti', code: 'ht', region: 'Caribbean' },
-  DO: { name: 'Dominican Republic', code: 'do', region: 'Caribbean' },
-  TT: { name: 'Trinidad and Tobago', code: 'tt', region: 'Caribbean' },
-  BB: { name: 'Barbados', code: 'bb', region: 'Caribbean' },
-  GD: { name: 'Grenada', code: 'gd', region: 'Caribbean' },
-  LC: { name: 'Saint Lucia', code: 'lc', region: 'Caribbean' },
-  VC: { name: 'Saint Vincent and the Grenadines', code: 'vc', region: 'Caribbean' },
-  AG: { name: 'Antigua and Barbuda', code: 'ag', region: 'Caribbean' },
-  KN: { name: 'Saint Kitts and Nevis', code: 'kn', region: 'Caribbean' },
-  DM: { name: 'Dominica', code: 'dm', region: 'Caribbean' },
-  BS: { name: 'Bahamas', code: 'bs', region: 'Caribbean' },
-  TC: { name: 'Turks and Caicos Islands', code: 'tc', region: 'Caribbean' },
-  KY: { name: 'Cayman Islands', code: 'ky', region: 'Caribbean' },
-  VG: { name: 'British Virgin Islands', code: 'vg', region: 'Caribbean' },
-  AI: { name: 'Anguilla', code: 'ai', region: 'Caribbean' },
-  MS: { name: 'Montserrat', code: 'ms', region: 'Caribbean' },
-  BM: { name: 'Bermuda', code: 'bm', region: 'North America' },
-  GL: { name: 'Greenland', code: 'gl', region: 'North America' },
-  FO: { name: 'Faroe Islands', code: 'fo', region: 'Europe' },
-  AX: { name: 'Åland Islands', code: 'ax', region: 'Europe' },
-  SX: { name: 'Sint Maarten', code: 'sx', region: 'Caribbean' },
-  CW: { name: 'Curaçao', code: 'cw', region: 'Caribbean' },
-  BQ: { name: 'Caribbean Netherlands', code: 'bq', region: 'Caribbean' },
-  AW: { name: 'Aruba', code: 'aw', region: 'Caribbean' },
-  RE: { name: 'Réunion', code: 're', region: 'Africa' },
-  YT: { name: 'Mayotte', code: 'yt', region: 'Africa' },
-  GP: { name: 'Guadeloupe', code: 'gp', region: 'Caribbean' },
-  MQ: { name: 'Martinique', code: 'mq', region: 'Caribbean' },
-  GF: { name: 'French Guiana', code: 'gf', region: 'South America' },
-  BL: { name: 'Saint Barthélemy', code: 'bl', region: 'Caribbean' },
-  MF: { name: 'Saint Martin', code: 'mf', region: 'Caribbean' },
-  PM: { name: 'Saint Pierre and Miquelon', code: 'pm', region: 'North America' },
   GI: { name: 'Gibraltar', code: 'gi', region: 'Europe' },
   AD: { name: 'Andorra', code: 'ad', region: 'Europe' },
   MC: { name: 'Monaco', code: 'mc', region: 'Europe' },
@@ -424,3 +302,61 @@ export const DEFAULT_COUNTRY = {
   name: 'United States',
   region: 'North America'
 };
+
+// Simple flag preloader to reduce network requests
+class FlagPreloader {
+  constructor() {
+    this.cache = new Map();
+    this.preloadedFlags = new Set();
+  }
+
+  // Preload popular country flags
+  preloadPopularFlags() {
+    const popularCodes = ['US', 'GB', 'DE', 'FR', 'JP', 'CA', 'AU', 'SG', 'NL', 'CH'];
+    popularCodes.forEach(code => {
+      this.preloadFlag(code, FLAG_SIZES.SMALL);
+    });
+  }
+
+  // Preload a specific flag
+  preloadFlag(countryCode, size) {
+    const key = `${countryCode}-${size}`;
+    if (this.preloadedFlags.has(key)) return;
+
+    const img = new Image();
+    img.onload = () => {
+      this.cache.set(key, img.src);
+      this.preloadedFlags.add(key);
+    };
+    img.onerror = () => {
+      // Silently fail for preloading
+    };
+    img.src = getFlagUrl(countryCode, size);
+  }
+
+  // Get cached flag URL
+  getCachedFlagUrl(countryCode, size) {
+    const key = `${countryCode}-${size}`;
+    if (this.cache.has(key)) {
+      return this.cache.get(key);
+    }
+    return getFlagUrl(countryCode, size);
+  }
+
+  // Clear cache
+  clearCache() {
+    this.cache.clear();
+    this.preloadedFlags.clear();
+  }
+}
+
+// Export singleton instance
+export const flagPreloader = new FlagPreloader();
+
+// Initialize preloader
+if (typeof window !== 'undefined') {
+  // Only run in browser environment
+  setTimeout(() => {
+    flagPreloader.preloadPopularFlags();
+  }, 1000); // Delay to not block initial page load
+}
