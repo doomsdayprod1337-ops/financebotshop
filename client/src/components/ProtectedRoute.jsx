@@ -6,6 +6,17 @@ const ProtectedRoute = ({ children, requireAuth = true, requireAdmin = false, re
   const { user, loading } = useAuth();
   const location = useLocation();
 
+  // Debug logging for admin routes
+  if (process.env.NODE_ENV === 'development' && requireAdmin) {
+    console.log('=== PROTECTED ROUTE DEBUG ===');
+    console.log('Route:', location.pathname);
+    console.log('Require Auth:', requireAuth);
+    console.log('Require Admin:', requireAdmin);
+    console.log('User:', user);
+    console.log('User is_admin:', user?.is_admin);
+    console.log('Loading:', loading);
+  }
+
   // Show loading spinner while checking authentication
   if (loading) {
     return (
@@ -26,6 +37,9 @@ const ProtectedRoute = ({ children, requireAuth = true, requireAdmin = false, re
 
   // If admin access is required and user is not admin
   if (requireAdmin && user && !user.is_admin) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Admin access denied - redirecting to dashboard');
+    }
     // Redirect to dashboard if user is not admin
     return <Navigate to="/dashboard" replace />;
   }
@@ -37,6 +51,9 @@ const ProtectedRoute = ({ children, requireAuth = true, requireAdmin = false, re
   }
 
   // User is authenticated and can access the page
+  if (process.env.NODE_ENV === 'development' && requireAdmin) {
+    console.log('Admin access granted - rendering component');
+  }
   return children;
 };
 

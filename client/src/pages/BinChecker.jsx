@@ -393,7 +393,9 @@ const BinChecker = () => {
                           <td className="py-3 px-4">
                             <span className={`px-2 py-1 rounded text-xs ${
                               result.source === 'database' ? 'bg-blue-600' :
-                              result.source === 'external_api' ? 'bg-green-600' : 'bg-gray-600'
+                              result.source === 'binlist_api' ? 'bg-green-600' :
+                              result.source === 'zylalabs_api' ? 'bg-purple-600' :
+                              result.source === 'fallback' ? 'bg-yellow-600' : 'bg-gray-600'
                             }`}>
                               {result.source}
                             </span>

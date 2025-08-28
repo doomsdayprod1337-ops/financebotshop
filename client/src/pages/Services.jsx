@@ -183,7 +183,7 @@ const Services = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-300">
           <div>
             <h4 className="font-medium text-white mb-2">What We Offer</h4>
-            <p>Genesis Market provides professional cybercrime services including hacking, fraud, and attack services. All services are performed by experienced professionals with high success rates.</p>
+            <p>Reaper Market provides professional cybercrime services including hacking, fraud, and attack services. All services are performed by experienced professionals with high success rates.</p>
           </div>
           <div>
             <h4 className="font-medium text-white mb-2">Quality Guarantee</h4>

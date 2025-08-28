@@ -312,3 +312,21 @@ body {
 .scrollbar-track-gray-800::-webkit-scrollbar-track {
   background-color: #1f2937;
 }
+
+/* Crypto Scrolling Banner Animation */
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll {
+  animation: scroll 30s linear infinite;
+}
+
+.animate-scroll:hover {
+  animation-play-state: paused;
+}

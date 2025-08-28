@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../config/axios';
+import { Eye, EyeOff, Shield, Skull, Lock, UserPlus } from 'lucide-react';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -17,10 +18,12 @@ const Register = () => {
     referralCode: referralCode || ''
   });
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState(''); // 'success' or 'error'
+  const [messageType, setMessageType] = useState('');
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -120,10 +123,8 @@ const Register = () => {
       let errorMessage = 'Registration failed. Please try again.';
       
       if (error.response?.data?.error) {
-        // API returned a specific error
         errorMessage = error.response.data.error;
       } else if (error.response?.data?.message) {
-        // API returned a message field
         errorMessage = error.response.data.message;
       } else if (error.response?.status === 400) {
         errorMessage = 'Invalid registration data. Please check your information.';
@@ -138,7 +139,6 @@ const Register = () => {
       } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
         errorMessage = 'Network error. Please check your connection and try again.';
       } else if (error.message) {
-        // Use the error message if available
         errorMessage = error.message;
       }
       
@@ -178,307 +178,344 @@ const Register = () => {
   const passwordStrength = getPasswordStrength(formData.password);
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen bg-gray-900 relative overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-pattern opacity-5"></div>
+      
+      {/* Dark overlay with subtle red gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 opacity-90"></div>
+      
+      {/* Floating red particles effect */}
+      <div className="absolute inset-0">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 bg-red-500 rounded-full animate-pulse"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 3}s`,
+              animationDuration: `${2 + Math.random() * 3}s`
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="relative z-10 flex flex-col min-h-screen">
         {/* Header */}
-        <div className="text-center">
-          <div className="mx-auto h-20 w-20 bg-gradient-to-r from-red-600 to-purple-600 rounded-full flex items-center justify-center mb-6">
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            </svg>
+        <header className="p-6 flex justify-between items-center border-b border-gray-700/30">
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <Skull className="w-8 h-8 text-red-500 animate-pulse" />
+              <div className="absolute inset-0 bg-red-500 opacity-20 blur-md rounded-full"></div>
+            </div>
+            <h1 className="text-2xl font-bold text-red-500 text-glow-red animate-pulse">
+              REAPER MARKET
+            </h1>
           </div>
-          <h2 className="text-3xl font-bold text-white">Join Genesis Market</h2>
-          <p className="mt-2 text-gray-400">
-            Access the premium marketplace for digital assets
-          </p>
-        </div>
+          <div className="flex items-center space-x-2 text-sm text-gray-400">
+            <Shield className="w-4 h-4" />
+            <span>Secure Portal</span>
+          </div>
+        </header>
 
-        {/* Default Invite Code Display */}
-        <div className="bg-gradient-to-r from-green-900 to-blue-900 rounded-lg p-6 border border-green-700">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-white mb-3">🎉 Grand Opening Special!</h3>
-            <div className="bg-gray-800 rounded-lg p-4 border border-gray-600 mb-3">
-              <div className="text-center">
-                <span className="text-gray-300 text-sm">Use Invite Code:</span>
-                <div className="mt-2">
-                  <span className="text-2xl font-bold text-green-400 font-mono bg-gray-700 px-4 py-2 rounded border border-green-500">
-                    GRANDOPEN
-                  </span>
-                </div>
-                <p className="text-xs text-gray-400 mt-2">
-                  Unlimited access • Never expires • No restrictions
-                </p>
+        {/* Main Content */}
+        <main className="flex-1 flex items-center justify-center p-6">
+          <div className="w-full max-w-md">
+            {/* Welcome Message */}
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-800 rounded-full border border-red-500/30 mb-4 border-glow-red">
+                <UserPlus className="w-10 h-10 text-red-500" />
               </div>
-            </div>
-            <button
-              onClick={() => {
-                setFormData(prev => ({
-                  ...prev,
-                  inviteCode: 'GRANDOPEN'
-                }));
-              }}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg text-sm transition-colors"
-            >
-              🔑 Use GRANDOPEN Code
-            </button>
-          </div>
-        </div>
-
-        {/* Registration Form */}
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 space-y-4">
-            {/* Username */}
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
-                Username
-              </label>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                required
-                value={formData.username}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 bg-gray-700 border rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.username ? 'border-red-500' : 'border-gray-600'
-                }`}
-                placeholder="Choose a unique username"
-              />
-              {errors.username && (
-                <p className="mt-1 text-sm text-red-400">{errors.username}</p>
-              )}
+              <h2 className="text-3xl font-bold text-white mb-2">
+                JOIN THE MARKET
+              </h2>
+              <p className="text-gray-400 text-sm">
+                Create your account to access premium assets
+              </p>
             </div>
 
-            {/* Email */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                Email Address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={formData.email}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 bg-gray-700 border rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.email ? 'border-red-500' : 'border-gray-600'
-                }`}
-                placeholder="your@email.com"
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-400">{errors.email}</p>
-              )}
-            </div>
-
-            {/* Password */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={formData.password}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 bg-gray-700 border rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.password ? 'border-red-500' : 'border-gray-600'
-                }`}
-                placeholder="Create a strong password"
-              />
-              {formData.password && (
-                <div className="mt-2">
-                  <div className="flex items-center space-x-2">
-                    <div className="flex space-x-1">
-                      {[1, 2, 3, 4].map((level) => (
-                        <div
-                          key={level}
-                          className={`h-2 w-8 rounded-full ${
-                            level <= passwordStrength.score
-                              ? passwordStrength.color.replace('text-', 'bg-')
-                              : 'bg-gray-600'
-                          }`}
-                        />
-                      ))}
+            {/* Default Invite Code Display */}
+            <div className="bg-gradient-to-r from-green-900 to-blue-900 rounded-lg p-4 border border-green-700 mb-6">
+              <div className="text-center">
+                <h3 className="text-lg font-semibold text-white mb-3">🎉 Grand Opening Special!</h3>
+                <div className="bg-gray-800 rounded-lg p-3 border border-gray-600 mb-3">
+                  <div className="text-center">
+                    <span className="text-gray-300 text-sm">Use Invite Code:</span>
+                    <div className="mt-2">
+                      <span className="text-xl font-bold text-green-400 font-mono bg-gray-700 px-3 py-1 rounded border border-green-500">
+                        GRANDOPEN
+                      </span>
                     </div>
-                    <span className={`text-sm ${passwordStrength.color}`}>
-                      {passwordStrength.label}
-                    </span>
+                    <p className="text-xs text-gray-400 mt-2">
+                      Unlimited access • Never expires • No restrictions
+                    </p>
                   </div>
                 </div>
-              )}
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-400">{errors.password}</p>
-              )}
-            </div>
-
-            {/* Confirm Password */}
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
-                Confirm Password
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                required
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 bg-gray-700 border rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.confirmPassword ? 'border-red-500' : 'border-gray-600'
-                }`}
-                placeholder="Confirm your password"
-              />
-              {errors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-400">{errors.confirmPassword}</p>
-              )}
-            </div>
-
-            {/* Invite Code */}
-            <div>
-              <label htmlFor="inviteCode" className="block text-sm font-medium text-gray-300 mb-2">
-                Invite Code <span className="text-red-400">*</span>
-              </label>
-              <input
-                id="inviteCode"
-                name="inviteCode"
-                type="text"
-                required
-                value={formData.inviteCode}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter your invite code"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Invite codes are required for registration. Contact an existing member to get one.
-              </p>
-            </div>
-
-            {/* Referral Code (Optional) */}
-            <div>
-              <label htmlFor="referralCode" className="block text-sm font-medium text-gray-300 mb-2">
-                Referral Code <span className="text-gray-500">(Optional)</span>
-              </label>
-              <input
-                id="referralCode"
-                name="referralCode"
-                type="text"
-                value={formData.referralCode}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter referral code for bonus"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Get bonus credits when someone uses your referral code.
-              </p>
-            </div>
-          </div>
-
-                                {/* Message Display */}
-            {message && (
-              <div className={`text-center p-4 rounded-lg border-2 relative ${
-                messageType === 'success'
-                  ? 'bg-green-900/50 text-green-300 border-green-500 shadow-lg' 
-                  : 'bg-red-900/50 text-red-300 border-red-500 shadow-lg'
-              }`}>
-                {/* Dismiss Button */}
                 <button
                   onClick={() => {
-                    setMessage('');
-                    setMessageType('');
+                    setFormData(prev => ({
+                      ...prev,
+                      inviteCode: 'GRANDOPEN'
+                    }));
                   }}
-                  className={`absolute top-2 right-2 p-1 rounded-full hover:bg-opacity-20 ${
-                    messageType === 'success' 
-                      ? 'hover:bg-green-400 text-green-300' 
-                      : 'hover:bg-red-400 text-red-300'
-                  }`}
-                  aria-label="Dismiss message"
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  🔑 Use GRANDOPEN Code
                 </button>
-                
-                <div className="flex items-center justify-center space-x-2">
-                  {messageType === 'success' ? (
-                    <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+              </div>
+            </div>
+
+            {/* Registration Form */}
+            <div className="bg-gray-800/50 border border-gray-700 backdrop-blur-sm rounded-lg p-6">
+              <div className="mb-6">
+                <h3 className="text-white text-xl font-bold mb-2">Create Account</h3>
+                <p className="text-gray-400 text-sm">
+                  Join the marketplace with secure credentials
+                </p>
+              </div>
+              
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="username" className="text-gray-300 text-sm font-medium">
+                    Username
+                  </label>
+                  <input
+                    id="username"
+                    name="username"
+                    type="text"
+                    required
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 bg-gray-700 border text-white placeholder-gray-500 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 transition-colors ${
+                      errors.username ? 'border-red-500' : 'border-red-500/30'
+                    }`}
+                    placeholder="Choose a unique username"
+                  />
+                  {errors.username && (
+                    <p className="text-red-400 text-xs">{errors.username}</p>
                   )}
-                  <span className="font-medium">{message}</span>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="email" className="text-gray-300 text-sm font-medium">
+                    Email Address
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 bg-gray-700 border text-white placeholder-gray-500 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 transition-colors ${
+                      errors.email ? 'border-red-500' : 'border-red-500/30'
+                    }`}
+                    placeholder="your@email.com"
+                  />
+                  {errors.email && (
+                    <p className="text-red-400 text-xs">{errors.email}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="password" className="text-gray-300 text-sm font-medium">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 py-2 bg-gray-700 border text-white placeholder-gray-500 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 pr-10 transition-colors ${
+                        errors.password ? 'border-red-500' : 'border-red-500/30'
+                      }`}
+                      placeholder="Create a strong password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {formData.password && (
+                    <div className="mt-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex space-x-1">
+                          {[1, 2, 3, 4].map((level) => (
+                            <div
+                              key={level}
+                              className={`h-2 w-6 rounded-full ${
+                                level <= passwordStrength.score
+                                  ? passwordStrength.color.replace('text-', 'bg-')
+                                  : 'bg-gray-600'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <span className={`text-xs ${passwordStrength.color}`}>
+                          {passwordStrength.label}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {errors.password && (
+                    <p className="text-red-400 text-xs">{errors.password}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="confirmPassword" className="text-gray-300 text-sm font-medium">
+                    Confirm Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      required
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 py-2 bg-gray-700 border text-white placeholder-gray-500 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 pr-10 transition-colors ${
+                        errors.confirmPassword ? 'border-red-500' : 'border-red-500/30'
+                      }`}
+                      placeholder="Confirm your password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="text-red-400 text-xs">{errors.confirmPassword}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="inviteCode" className="text-gray-300 text-sm font-medium">
+                    Invite Code <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    id="inviteCode"
+                    name="inviteCode"
+                    type="text"
+                    required
+                    value={formData.inviteCode}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 bg-gray-700 border border-red-500/30 text-white placeholder-gray-500 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 transition-colors"
+                    placeholder="Enter your invite code"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Invite codes are required for registration.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="referralCode" className="text-gray-300 text-sm font-medium">
+                    Referral Code <span className="text-gray-500">(Optional)</span>
+                  </label>
+                  <input
+                    id="referralCode"
+                    name="referralCode"
+                    type="text"
+                    value={formData.referralCode}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 bg-gray-700 border border-red-500/30 text-white placeholder-gray-500 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 transition-colors"
+                    placeholder="Enter referral code for bonus"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Get bonus credits when someone uses your referral code.
+                  </p>
+                </div>
+
+                {/* Message Display */}
+                {message && (
+                  <div className={`text-center p-3 rounded-md border relative ${
+                    messageType === 'success'
+                      ? 'bg-green-900/50 text-green-300 border-green-500' 
+                      : 'bg-red-900/50 text-red-300 border-red-500'
+                  }`}>
+                    <button
+                      onClick={() => {
+                        setMessage('');
+                        setMessageType('');
+                      }}
+                      className={`absolute top-2 right-2 p-1 rounded-full hover:bg-opacity-20 ${
+                        messageType === 'success' 
+                          ? 'hover:bg-green-400 text-green-300' 
+                          : 'hover:bg-red-400 text-red-300'
+                      }`}
+                      aria-label="Dismiss message"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                    
+                    <div className="flex items-center justify-center space-x-2">
+                      {messageType === 'success' ? (
+                        <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      )}
+                      <span className="text-sm font-medium">{message}</span>
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>CREATING ACCOUNT...</span>
+                    </div>
+                  ) : (
+                    'CREATE ACCOUNT'
+                  )}
+                </button>
+              </form>
+
+              <div className="mt-6 pt-6 border-t border-gray-700">
+                <div className="text-center">
+                  <p className="text-gray-400 text-sm">
+                    Already have an account?{' '}
+                    <Link to="/login" className="text-red-400 hover:text-red-300 font-medium transition-colors">
+                      Sign in here
+                    </Link>
+                  </p>
                 </div>
               </div>
-            )}
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-          >
-            {isLoading ? (
-              <div className="flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Creating Account...</span>
-              </div>
-            ) : (
-              'Create Account'
-            )}
-          </button>
-
-          {/* Terms and Privacy */}
-          <div className="text-center">
-            <p className="text-xs text-gray-500">
-              By creating an account, you agree to our{' '}
-              <Link to="/terms" className="text-blue-400 hover:text-blue-300">
-                Terms of Service
-              </Link>{' '}
-              and{' '}
-              <Link to="/privacy" className="text-blue-400 hover:text-blue-300">
-                Privacy Policy
-              </Link>
-            </p>
-          </div>
-        </form>
-
-        {/* Login Link */}
-        <div className="text-center">
-          <p className="text-gray-400">
-            Already have an account?{' '}
-            <Link to="/login" className="text-blue-400 hover:text-blue-300 font-medium">
-              Sign in here
-            </Link>
-          </p>
-        </div>
-
-        {/* Features */}
-        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-          <h3 className="text-sm font-medium text-white mb-3">Why Join Genesis Market?</h3>
-          <div className="space-y-2 text-xs text-gray-400">
-            <div className="flex items-center space-x-2">
-              <span className="text-green-400">✓</span>
-              <span>Access to premium stolen credentials</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-green-400">✓</span>
-              <span>Secure and anonymous transactions</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-green-400">✓</span>
-              <span>24/7 customer support</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-green-400">✓</span>
-              <span>Referral bonus system</span>
             </div>
           </div>
-        </div>
+        </main>
+
+        {/* Footer */}
+        <footer className="p-6 border-t border-gray-700/30">
+          <div className="flex justify-between items-center text-sm text-gray-500">
+            <p>&copy; 2024 Reaper Market. All rights reserved.</p>
+            <div className="flex space-x-4">
+              <a href="#" className="hover:text-red-500 transition-colors">Privacy</a>
+              <a href="#" className="hover:text-red-500 transition-colors">Terms</a>
+              <a href="#" className="hover:text-red-500 transition-colors">Support</a>
+            </div>
+          </div>
+        </footer>
       </div>
     </div>
   );

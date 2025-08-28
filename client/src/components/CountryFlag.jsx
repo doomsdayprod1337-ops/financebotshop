@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { getFlagUrl, getCountryName, FLAG_SIZES } from '../utils/flags';
+import React from 'react';
+import { getFlagEmoji, getCountryName, FLAG_SIZES } from '../utils/flags';
 
 const CountryFlag = ({ 
   countryCode, 
@@ -10,49 +10,21 @@ const CountryFlag = ({
   onClick = null,
   fallbackToUS = true
 }) => {
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
-  
   const countryName = getCountryName(countryCode);
-  const flagUrl = getFlagUrl(countryCode, size);
-  const fallbackUrl = fallbackToUS ? getFlagUrl('US', size) : null;
-
-  const handleImageLoad = () => {
-    setImageLoaded(true);
-    setImageError(false);
-  };
-
-  const handleImageError = (e) => {
-    setImageError(true);
-    setImageLoaded(false);
-    
-    if (fallbackToUS && fallbackUrl && e.target.src !== fallbackUrl) {
-      // Try fallback only once to prevent infinite loops
-      e.target.src = fallbackUrl;
-    } else {
-      // Hide broken image after fallback attempt
-      e.target.style.display = 'none';
-    }
-  };
+  const flagEmoji = getFlagEmoji(countryCode);
 
   const flagElement = (
-    <img
-      src={flagUrl}
-      alt={`${countryName} flag`}
-      className={`rounded ${onClick ? 'cursor-pointer hover:opacity-80' : ''} ${className} ${
-        !imageLoaded ? 'opacity-0' : 'opacity-100'
-      } transition-opacity duration-200`}
+    <span
+      className={`inline-block ${onClick ? 'cursor-pointer hover:opacity-80' : ''} ${className}`}
       style={{ 
-        width: `${size}px`, 
-        height: `${size}px`,
-        objectFit: 'cover'
+        fontSize: `${size}px`,
+        lineHeight: 1
       }}
-      onLoad={handleImageLoad}
-      onError={handleImageError}
       onClick={onClick}
       title={showTooltip ? countryName : undefined}
-      loading="lazy" // Add lazy loading to reduce initial network requests
-    />
+    >
+      {flagEmoji}
+    </span>
   );
 
   if (showName) {

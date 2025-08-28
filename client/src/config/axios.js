@@ -1,8 +1,11 @@
 import axios from 'axios';
 
-// Create axios instance with relative paths for Vercel deployment
+// Create axios instance with proper configuration for Netlify deployment
 const api = axios.create({
-  timeout: 10000,
+  // Use relative paths for Netlify functions
+  // The /api/* path will be redirected to /.netlify/functions/* by Netlify
+  baseURL: '',
+  timeout: 30000, // Increased timeout for Netlify functions
   headers: {
     'Content-Type': 'application/json',
   },
@@ -27,10 +30,15 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Unauthorized - clear token and redirect to login
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      const errorMessage = error.response?.data?.error || error.response?.data?.message;
+      
+      // Only redirect for specific token-related errors
+      if (errorMessage === 'Invalid token' || errorMessage === 'Invalid or expired token') {
+        // Clear token and redirect to login
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

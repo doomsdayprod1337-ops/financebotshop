@@ -144,6 +144,7 @@ const Profile = () => {
   const tabs = [
     { id: 'profile', label: 'Profile Settings', icon: '👤' },
     { id: 'security', label: 'Security', icon: '🔒' },
+    { id: 'payments-purchases', label: 'Payments & Purchases', icon: '💳' },
     { id: 'purchases', label: 'Purchases', icon: '💵' },
     { id: 'deposits', label: 'Deposits', icon: '💰' },
     { id: 'telegram', label: 'Telegram', icon: '📱' }
@@ -339,6 +340,124 @@ const Profile = () => {
                 </button>
               </div>
             </form>
+          </div>
+        )}
+
+        {/* Payments & Purchases Tab */}
+        {activeTab === 'payments-purchases' && (
+          <div className="p-6">
+            <h2 className="text-xl font-semibold text-white mb-6">Payments & Purchases</h2>
+            <p className="text-gray-400 mb-6">Manage your payment methods, view purchase history, and track transactions all in one place.</p>
+            
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="bg-gray-700 p-4 rounded-lg border border-gray-600">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-400 mb-1">
+                    ${purchases.reduce((sum, p) => sum + (p.amount || 0), 0).toFixed(2)}
+                  </div>
+                  <div className="text-gray-300 text-sm">Total Spent</div>
+                </div>
+              </div>
+              <div className="bg-gray-700 p-4 rounded-lg border border-gray-600">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-400 mb-1">
+                    {purchases.length}
+                  </div>
+                  <div className="text-gray-300 text-sm">Total Purchases</div>
+                </div>
+              </div>
+              <div className="bg-gray-700 p-4 rounded-lg border border-gray-600">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-400 mb-1">
+                    {deposits.length}
+                  </div>
+                  <div className="text-gray-300 text-sm">Total Deposits</div>
+                </div>
+              </div>
+              <div className="bg-gray-700 p-4 rounded-lg border border-gray-600">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-yellow-400 mb-1">
+                    {formatCurrency(walletBalance)}
+                  </div>
+                  <div className="text-gray-300 text-sm">Wallet Balance</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap gap-3 mb-6">
+              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors">
+                ➕ Add Payment Method
+              </button>
+              <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors">
+                💰 Make Deposit
+              </button>
+              <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition-colors">
+                📊 Export History
+              </button>
+            </div>
+
+            {/* Recent Activity */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-white">Recent Activity</h3>
+              
+              {/* Recent Purchases */}
+              {purchases.slice(0, 3).map((purchase, index) => (
+                <div key={index} className="bg-gray-700 p-4 rounded-lg border border-gray-600">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-blue-400 text-xl">💳</span>
+                      <div>
+                        <h4 className="font-medium text-white">Purchase: {purchase.product_name || 'Product'}</h4>
+                        <p className="text-sm text-gray-400">Order ID: {purchase.id}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-green-400">
+                        -{formatCurrency(purchase.amount || 0)}
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        {formatDate(purchase.created_at)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Recent Deposits */}
+              {deposits.slice(0, 2).map((deposit, index) => (
+                <div key={index} className="bg-gray-700 p-4 rounded-lg border border-gray-600">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-green-400 text-xl">💰</span>
+                      <div>
+                        <h4 className="font-medium text-white">Deposit #{deposit.id}</h4>
+                        <p className="text-sm text-gray-400">{deposit.payment_method || 'Payment Method'}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-blue-400">
+                        +{formatCurrency(deposit.amount || 0)}
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        {formatDate(deposit.created_at)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* View All Button */}
+              <div className="text-center pt-4">
+                <button 
+                  onClick={() => window.location.href = '/payments-purchases'}
+                  className="bg-gray-600 hover:bg-gray-500 text-white px-6 py-2 rounded transition-colors"
+                >
+                  View Full Payments & Purchases Dashboard
+                </button>
+              </div>
+            </div>
           </div>
         )}
         

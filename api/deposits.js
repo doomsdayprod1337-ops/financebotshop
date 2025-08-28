@@ -60,7 +60,22 @@ exports.handler = async (event, context) => {
     try {
       const { data: deposits, error } = await supabase
         .from('deposits')
-        .select('*')
+        .select(`
+          id,
+          amount,
+          currency,
+          payment_processor,
+          status,
+          transaction_hash,
+          wallet_address,
+          network_fee,
+          confirmation_blocks,
+          required_confirmations,
+          expires_at,
+          confirmed_at,
+          created_at,
+          updated_at
+        `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 

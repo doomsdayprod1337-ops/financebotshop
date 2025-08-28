@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import CountryFlag from '../components/CountryFlag';
 import { getCountryName, FLAG_SIZES } from '../utils/flags';
+import { getBotById } from '../data/botDatabase';
+import { CryptoPriceConverter } from '../components/CryptoComponents';
 
 const BotDetails = () => {
   const { botId } = useParams();
@@ -65,10 +67,7 @@ const BotDetails = () => {
         lastWeek: 156,
         lastMonth: 647,
         
-        // Purchase info
-        purchaseDate: '2019-03-11 12:15:02',
-        purchaseStatus: 'Purchased',
-        viewedCount: 3
+
       };
       
       setBot(mockBot);
@@ -288,41 +287,6 @@ const BotDetails = () => {
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
-            {/* Purchase Information */}
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-xl font-semibold text-white mb-4">Purchase Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-green-400 mb-2">
-                    {bot.purchaseStatus}
-                  </div>
-                  <div className="text-gray-300">Status</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-400 mb-2">
-                    ${bot.price.toFixed(2)}
-                  </div>
-                  <div className="text-gray-300">Price</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-yellow-400 mb-2">
-                    {bot.viewedCount}
-                  </div>
-                  <div className="text-gray-300">Times Viewed</div>
-                </div>
-              </div>
-              
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <span className="text-gray-400">Purchase Date:</span>
-                  <span className="ml-2 text-white">{bot.purchaseDate}</span>
-                </div>
-                <div>
-                  <span className="text-gray-400">Last Viewed:</span>
-                  <span className="ml-2 text-white">{bot.lastViewed}</span>
-                </div>
-              </div>
-            </div>
 
             {/* Bot Statistics */}
             <div className="bg-gray-800 rounded-lg p-6">
@@ -356,7 +320,7 @@ const BotDetails = () => {
             </div>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
                 <h3 className="text-lg font-semibold text-white mb-4">Quick Actions</h3>
                 <div className="space-y-3">
@@ -412,7 +376,39 @@ const BotDetails = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Crypto Price Converter */}
+              <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                <CryptoPriceConverter usdPrice={bot.price} />
+              </div>
             </div>
+            
+            {/* Data Security Notice */}
+            {bot.notes && (
+              <div className="bg-gray-800 rounded-lg p-6 border border-yellow-600">
+                <h3 className="text-xl font-semibold text-yellow-400 mb-4">🔒 Data Security Notice</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="text-lg font-medium text-white mb-2">Available Data (Not Displayed)</h4>
+                    <ul className="space-y-2 text-gray-300">
+                      {Object.entries(bot.notes).map(([key, value]) => (
+                        <li key={key} className="flex items-start">
+                          <span className="text-yellow-400 mr-2">•</span>
+                          <span>{value}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="bg-yellow-900 bg-opacity-20 p-4 rounded-lg border border-yellow-700">
+                    <h4 className="text-lg font-medium text-yellow-400 mb-2">Security Protocol</h4>
+                    <p className="text-yellow-200 text-sm">
+                      Sensitive information such as credentials, cookies, downloads, and personal data 
+                      are available in the bot logs but are not displayed in this interface for security reasons.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

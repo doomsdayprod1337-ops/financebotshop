@@ -1,27 +1,12 @@
 const { createClient } = require('@supabase/supabase-js');
-const jwt = require('jsonwebtoken');
 
+// Initialize Supabase client
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
 );
 
-// Middleware to verify JWT token
-function verifyToken(headers) {
-  const authHeader = headers.authorization || headers.Authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw new Error('No token provided');
-  }
-
-  const token = authHeader.substring(7);
-  try {
-    return jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-key');
-  } catch (error) {
-    throw new Error('Invalid token');
-  }
-}
-
-module.exports.handler = async function(event, context) {
+exports.handler = async function(event, context) {
   // Handle CORS
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -29,321 +14,785 @@ module.exports.handler = async function(event, context) {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS'
-      }
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
+      },
+      body: ''
     };
   }
 
+  // Set CORS headers for all responses
+  const headers = {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*'
+  };
+
   try {
-    // Verify token for all requests
-    const decoded = verifyToken(event.headers);
+    const { httpMethod, path } = event;
+    const pathParts = path.split('/').filter(Boolean);
+    const action = pathParts[pathParts.length - 1];
 
-    switch (event.httpMethod) {
+    switch (httpMethod) {
       case 'GET':
-        // Get tickets - admins can see all, users see only their own
-        // Get user's invites with comprehensive stats
-        const { data: user, error: userError } = await supabase
-          .from('users')
-          .select('is_admin, role, admin')
-          .eq('id', decoded.userId)
-          .single();
-
-        if (userError || !user) {
-          return {
-            statusCode: 401,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*'
-            },
-            body: JSON.stringify({ error: 'User not found' })
-          };
-        }
-
-        // Check if user is admin using multiple possible field names
-        const isAdmin = user.is_admin || user.role === 'admin' || user.admin || false;
-
-        let ticketsQuery = supabase
-          .from('tickets')
-          .select(`
-            *,
-            user:users(username, email),
-            messages:ticket_messages(*)
-          `)
-          .order('created_at', { ascending: false });
-
-        // If not admin, only show user's own tickets
-        if (!isAdmin) {
-          ticketsQuery = ticketsQuery.eq('user_id', decoded.userId);
-        }
-
-        const { data: tickets, error: ticketsError } = await ticketsQuery;
-
-        if (ticketsError) {
-          throw ticketsError;
-        }
-
-        return {
-          statusCode: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({
-            success: true,
-            tickets: tickets || []
-          })
-        };
-
-      case 'POST':
-        // Create new ticket
-        const { title, description, priority, category } = JSON.parse(event.body);
-
-        if (!title || !description) {
-          return {
-            statusCode: 400,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*'
-            },
-            body: JSON.stringify({ error: 'Title and description are required' })
-          };
-        }
-
-        const newTicket = {
-          user_id: decoded.userId,
-          title: title.trim(),
-          description: description.trim(),
-          priority: priority || 'medium',
-          category: category || 'general',
-          status: 'open',
-          created_at: new Date().toISOString()
-        };
-
-        const { data: createdTicket, error: createError } = await supabase
-          .from('tickets')
-          .insert(newTicket)
-          .select()
-          .single();
-
-        if (createError) {
-          throw createError;
-        }
-
-        // Add initial message
-        const initialMessage = {
-          ticket_id: createdTicket.id,
-          user_id: decoded.userId,
-          message: description.trim(),
-          is_admin: false,
-          created_at: new Date().toISOString()
-        };
-
-        await supabase
-          .from('ticket_messages')
-          .insert(initialMessage);
-
-        return {
-          statusCode: 201,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({
-            success: true,
-            message: 'Ticket created successfully',
-            ticket: createdTicket
-          })
-        };
-
-      case 'PUT':
-        // Update ticket (admin only) or add message
-        const { ticketId, action, message, status, newPriority, adminNotes } = JSON.parse(event.body);
-
-        if (!ticketId) {
-          return {
-            statusCode: 400,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*'
-            },
-            body: JSON.stringify({ error: 'Ticket ID is required' })
-          };
-        }
-
-        // Get ticket and user info
-        const { data: ticket, error: ticketError } = await supabase
-          .from('tickets')
-          .select('*')
-          .eq('id', ticketId)
-          .single();
-
-        if (ticketError || !ticket) {
-          return {
-            statusCode: 404,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*'
-            },
-            body: JSON.stringify({ error: 'Ticket not found' })
-          };
-        }
-
-        // Check if user owns the ticket or is admin
-        const { data: currentUser, error: currentUserError } = await supabase
-          .from('users')
-          .select('is_admin, role, admin')
-          .eq('id', decoded.userId)
-          .single();
-
-        if (currentUserError || !currentUser) {
-          return {
-            statusCode: 401,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*'
-            },
-            body: JSON.stringify({ error: 'User not found' })
-          };
-        }
-
-        // Check if user is admin using multiple possible field names
-        const currentUserIsAdmin = currentUser.is_admin || currentUser.role === 'admin' || currentUser.admin || false;
-
-        if (action === 'add_message') {
-          // Add message to ticket
-          if (!message) {
-            return {
-              statusCode: 400,
-              headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-              },
-              body: JSON.stringify({ error: 'Message is required' })
-            };
-          }
-
-          const newMessage = {
-            ticket_id: ticketId,
-            user_id: decoded.userId,
-            message: message.trim(),
-            is_admin: currentUserIsAdmin,
-            created_at: new Date().toISOString()
-          };
-
-          const { data: createdMessage, error: messageError } = await supabase
-            .from('ticket_messages')
-            .insert(newMessage)
-            .select()
-            .single();
-
-          if (messageError) {
-            throw messageError;
-          }
-
-          // Update ticket status to 'updated' if user is not admin
-          if (!currentUserIsAdmin) {
-            await supabase
-              .from('tickets')
-              .update({ 
-                status: 'updated',
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', ticketId);
-          }
-
-          return {
-            statusCode: 200,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*'
-            },
-            body: JSON.stringify({
-              success: true,
-              message: 'Message added successfully',
-              ticketMessage: createdMessage
-            })
-          };
-
-        } else if (action === 'update_status' && currentUserIsAdmin) {
-          // Admin can update ticket status, priority, and add notes
-          const updateData = {
-            updated_at: new Date().toISOString()
-          };
-
-          if (status) updateData.status = status;
-          if (newPriority) updateData.priority = newPriority;
-          if (adminNotes) updateData.admin_notes = adminNotes;
-
-          const { data: updatedTicket, error: updateError } = await supabase
-            .from('tickets')
-            .update(updateData)
-            .eq('id', ticketId)
-            .select()
-            .single();
-
-          if (updateError) {
-            throw updateError;
-          }
-
-          return {
-            statusCode: 200,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*'
-            },
-            body: JSON.stringify({
-              success: true,
-              message: 'Ticket updated successfully',
-              ticket: updatedTicket
-            })
-          };
-
+        if (pathParts.length === 2) {
+          // Just /api/tickets - return user's tickets
+          return await getUserTickets(event);
+        } else if (action === 'categories') {
+          return await getTicketCategories(event);
+        } else if (action === 'urgency-levels') {
+          return await getUrgencyLevels(event);
+        } else if (action === 'admin') {
+          return await getAdminTickets(event);
+        } else if (action === 'stats') {
+          return await getTicketStats(event);
         } else {
-          return {
-            statusCode: 403,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*'
-            },
-            body: JSON.stringify({ error: 'Action not allowed' })
-          };
+          // Get specific ticket by ID
+          return await getTicketById(event, action);
         }
-
+      
+      case 'POST':
+        if (action === 'create') {
+          return await createTicket(event);
+        } else if (action === 'response') {
+          return await addTicketResponse(event);
+        } else {
+          return await createTicket(event); // Default to create
+        }
+      
+      case 'PUT':
+        if (action === 'update') {
+          return await updateTicket(event);
+        } else if (action === 'status') {
+          return await updateTicketStatus(event);
+        } else if (action === 'assign') {
+          return await assignTicket(event);
+        } else {
+          return await updateTicket(event); // Default to update
+        }
+      
+      case 'DELETE':
+        if (action === 'delete') {
+          return await deleteTicket(event);
+        } else if (action === 'response') {
+          return await deleteTicketResponse(event);
+        } else {
+          return await deleteTicket(event); // Default to delete
+        }
+      
       default:
         return {
           statusCode: 405,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
+          headers,
           body: JSON.stringify({ error: 'Method not allowed' })
         };
     }
-
   } catch (error) {
-    console.error('Tickets API error:', error);
-    
-    if (error.message === 'No token provided' || error.message === 'Invalid token') {
-      return {
-        statusCode: 401,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({ error: 'Authentication required' })
-      };
-    }
-
+    console.error('Ticket API error:', error);
     return {
       statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers,
       body: JSON.stringify({ 
         error: 'Internal server error',
-        message: error.message 
+        details: error.message 
       })
     };
   }
 };
+
+// Get user's tickets
+async function getUserTickets(event) {
+  try {
+    // Check authorization
+    const authHeader = event.headers.authorization || event.headers.Authorization;
+    if (!authHeader) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Authorization header required' })
+      };
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Verify JWT and get user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Invalid token' })
+      };
+    }
+
+    // Get query parameters
+    const queryParams = event.queryStringParameters || {};
+    const page = parseInt(queryParams.page) || 1;
+    const limit = parseInt(queryParams.limit) || 20;
+    const status = queryParams.status;
+    const category = queryParams.category;
+
+    let query = supabase
+      .from('tickets')
+      .select(`
+        *,
+        ticket_categories(name),
+        ticket_urgency_levels(name, color),
+        ticket_responses(id)
+      `, { count: 'exact' })
+      .eq('user_id', user.id);
+
+    // Apply filters
+    if (status && status !== 'all') {
+      query = query.eq('status', status);
+    }
+
+    if (category && category !== 'all') {
+      query = query.eq('category_id', category);
+    }
+
+    // Apply pagination
+    const offset = (page - 1) * limit;
+    query = query.range(offset, offset + limit - 1);
+
+    // Order by created_at desc
+    query = query.order('created_at', { ascending: false });
+
+    const { data: tickets, error, count } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    // Transform data to include response count
+    const transformedTickets = tickets.map(ticket => ({
+      ...ticket,
+      response_count: ticket.ticket_responses?.length || 0,
+      category_name: ticket.ticket_categories?.name || 'Unknown',
+      urgency_name: ticket.ticket_urgency_levels?.name || 'Unknown',
+      urgency_color: ticket.ticket_urgency_levels?.color || '#6B7280'
+    }));
+
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({
+        success: true,
+        data: transformedTickets,
+        pagination: {
+          page,
+          limit,
+          total: count,
+          pages: Math.ceil(count / limit)
+        }
+      })
+    };
+  } catch (error) {
+    console.error('Error getting user tickets:', error);
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Failed to get tickets' })
+    };
+  }
+}
+
+// Get ticket categories
+async function getTicketCategories(event) {
+  try {
+    const { data: categories, error } = await supabase
+      .from('ticket_categories')
+      .select('*')
+      .order('name');
+
+    if (error) {
+      throw error;
+    }
+
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({
+        success: true,
+        data: categories
+      })
+    };
+  } catch (error) {
+    console.error('Error getting ticket categories:', error);
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Failed to get ticket categories' })
+    };
+  }
+}
+
+// Get urgency levels
+async function getUrgencyLevels(event) {
+  try {
+    const { data: levels, error } = await supabase
+      .from('ticket_urgency_levels')
+      .select('*')
+      .order('level');
+
+    if (error) {
+      throw error;
+    }
+
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({
+        success: true,
+        data: levels
+      })
+    };
+  } catch (error) {
+    console.error('Error getting urgency levels:', error);
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Failed to get urgency levels' })
+    };
+  }
+}
+
+// Create new ticket
+async function createTicket(event) {
+  try {
+    // Check authorization
+    const authHeader = event.headers.authorization || event.headers.Authorization;
+    if (!authHeader) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Authorization header required' })
+      };
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Verify JWT and get user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Invalid token' })
+      };
+    }
+
+    const body = JSON.parse(event.body || '{}');
+    const { category_id, urgency_level, title, description } = body;
+
+    // Validate required fields
+    if (!category_id || !urgency_level || !title || !description) {
+      return {
+        statusCode: 400,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'All fields are required' })
+      };
+    }
+
+    // Validate urgency level
+    if (urgency_level < 1 || urgency_level > 5) {
+      return {
+        statusCode: 400,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Urgency level must be between 1 and 5' })
+      };
+    }
+
+    // Create ticket
+    const { data: ticket, error } = await supabase
+      .from('tickets')
+      .insert({
+        user_id: user.id,
+        category_id,
+        urgency_level,
+        title,
+        description,
+        status: 'unread'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return {
+      statusCode: 201,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({
+        success: true,
+        message: 'Ticket created successfully',
+        data: ticket
+      })
+    };
+  } catch (error) {
+    console.error('Error creating ticket:', error);
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Failed to create ticket' })
+    };
+  }
+}
+
+// Get specific ticket by ID
+async function getTicketById(event, ticketId) {
+  try {
+    // Check authorization
+    const authHeader = event.headers.authorization || event.headers.Authorization;
+    if (!authHeader) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Authorization header required' })
+      };
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Verify JWT and get user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Invalid token' })
+      };
+    }
+
+    // Get ticket with responses
+    const { data: ticket, error: ticketError } = await supabase
+      .from('tickets')
+      .select(`
+        *,
+        ticket_categories(name),
+        ticket_urgency_levels(name, color),
+        ticket_responses(
+          id,
+          message,
+          is_admin_response,
+          created_at,
+          users(username, email)
+        )
+      `)
+      .eq('id', ticketId)
+      .single();
+
+    if (ticketError) {
+      throw ticketError;
+    }
+
+    // Check if user owns this ticket or is admin
+    if (ticket.user_id !== user.id && !user.is_admin) {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Access denied' })
+      };
+    }
+
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({
+        success: true,
+        data: ticket
+      })
+    };
+  } catch (error) {
+    console.error('Error getting ticket:', error);
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Failed to get ticket' })
+    };
+  }
+}
+
+// Add response to ticket
+async function addTicketResponse(event) {
+  try {
+    // Check authorization
+    const authHeader = event.headers.authorization || event.headers.Authorization;
+    if (!authHeader) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Authorization header required' })
+      };
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Verify JWT and get user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Invalid token' })
+      };
+    }
+
+    const body = JSON.parse(event.body || '{}');
+    const { ticket_id, message } = body;
+
+    if (!ticket_id || !message) {
+      return {
+        statusCode: 400,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Ticket ID and message are required' })
+      };
+    }
+
+    // Check if ticket exists and user has access
+    const { data: ticket, error: ticketError } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('id', ticket_id)
+      .single();
+
+    if (ticketError || !ticket) {
+      return {
+        statusCode: 404,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Ticket not found' })
+      };
+    }
+
+    if (ticket.user_id !== user.id && !user.is_admin) {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Access denied' })
+      };
+    }
+
+    // Add response
+    const { data: response, error } = await supabase
+      .from('ticket_responses')
+      .insert({
+        ticket_id,
+        user_id: user.id,
+        message,
+        is_admin_response: user.is_admin || false
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return {
+      statusCode: 201,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({
+        success: true,
+        message: 'Response added successfully',
+        data: response
+      })
+    };
+  } catch (error) {
+    console.error('Error adding ticket response:', error);
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Failed to add response' })
+    };
+  }
+}
+
+// Update ticket status (admin only)
+async function updateTicketStatus(event) {
+  try {
+    // Check authorization
+    const authHeader = event.headers.authorization || event.headers.Authorization;
+    if (!authHeader) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Authorization header required' })
+      };
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Verify JWT and get user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Invalid token' })
+      };
+    }
+
+    // Check if user is admin
+    if (!user.is_admin) {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Admin access required' })
+      };
+    }
+
+    const body = JSON.parse(event.body || '{}');
+    const { ticket_id, status } = body;
+
+    if (!ticket_id || !status) {
+      return {
+        statusCode: 400,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Ticket ID and status are required' })
+      };
+    }
+
+    // Validate status
+    const validStatuses = ['unread', 'response', 'inprogress', 'closed'];
+    if (!validStatuses.includes(status)) {
+      return {
+        statusCode: 400,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Invalid status' })
+      };
+    }
+
+    // Update ticket
+    const updateData = { status };
+    if (status === 'closed') {
+      updateData.closed_at = new Date().toISOString();
+      updateData.closed_by = user.id;
+    }
+
+    const { data: ticket, error } = await supabase
+      .from('tickets')
+      .update(updateData)
+      .eq('id', ticket_id)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({
+        success: true,
+        message: 'Ticket status updated successfully',
+        data: ticket
+      })
+    };
+  } catch (error) {
+    console.error('Error updating ticket status:', error);
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Failed to update ticket status' })
+    };
+  }
+}
+
+// Get admin tickets (admin only)
+async function getAdminTickets(event) {
+  try {
+    // Check authorization
+    const authHeader = event.headers.authorization || event.headers.Authorization;
+    if (!authHeader) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Authorization header required' })
+      };
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Verify JWT and get user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Invalid token' })
+      };
+    }
+
+    // Check if user is admin
+    if (!user.is_admin) {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Admin access required' })
+      };
+    }
+
+    // Get query parameters
+    const queryParams = event.queryStringParameters || {};
+    const page = parseInt(queryParams.page) || 1;
+    const limit = parseInt(queryParams.limit) || 50;
+    const status = queryParams.status;
+    const urgency = queryParams.urgency;
+
+    let query = supabase
+      .from('tickets')
+      .select(`
+        *,
+        ticket_categories(name),
+        ticket_urgency_levels(name, color),
+        users(username, email),
+        ticket_responses(id)
+      `, { count: 'exact' });
+
+    // Apply filters
+    if (status && status !== 'all') {
+      query = query.eq('status', status);
+    }
+
+    if (urgency && urgency !== 'all') {
+      query = query.eq('urgency_level', parseInt(urgency));
+    }
+
+    // Apply pagination
+    const offset = (page - 1) * limit;
+    query = query.range(offset, offset + limit - 1);
+
+    // Order by urgency (high to low) then by created_at
+    query = query.order('urgency_level', { ascending: false }).order('created_at', { ascending: false });
+
+    const { data: tickets, error, count } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    // Transform data
+    const transformedTickets = tickets.map(ticket => ({
+      ...ticket,
+      response_count: ticket.ticket_responses?.length || 0,
+      category_name: ticket.ticket_categories?.name || 'Unknown',
+      urgency_name: ticket.ticket_urgency_levels?.name || 'Unknown',
+      urgency_color: ticket.ticket_urgency_levels?.color || '#6B7280',
+      username: ticket.users?.username || 'Unknown'
+    }));
+
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({
+        success: true,
+        data: transformedTickets,
+        pagination: {
+          page,
+          limit,
+          total: count,
+          pages: Math.ceil(count / limit)
+        }
+      })
+    };
+  } catch (error) {
+    console.error('Error getting admin tickets:', error);
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Failed to get admin tickets' })
+    };
+  }
+}
+
+// Get ticket statistics
+async function getTicketStats(event) {
+  try {
+    // Check authorization
+    const authHeader = event.headers.authorization || event.headers.Authorization;
+    if (!authHeader) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Authorization header required' })
+      };
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Verify JWT and get user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Invalid token' })
+      };
+    }
+
+    let query = supabase.from('tickets');
+    
+    // If not admin, only show user's tickets
+    if (!user.is_admin) {
+      query = query.eq('user_id', user.id);
+    }
+
+    const { data: tickets, error } = await query.select('status, urgency_level');
+
+    if (error) {
+      throw error;
+    }
+
+    // Calculate statistics
+    const stats = {
+      total: tickets.length,
+      unread: tickets.filter(t => t.status === 'unread').length,
+      response: tickets.filter(t => t.status === 'response').length,
+      inprogress: tickets.filter(t => t.status === 'inprogress').length,
+      closed: tickets.filter(t => t.status === 'closed').length,
+      low: tickets.filter(t => t.urgency_level === 1).length,
+      normal: tickets.filter(t => t.urgency_level === 2).length,
+      medium: tickets.filter(t => t.urgency_level === 3).length,
+      high: tickets.filter(t => t.urgency_level === 4).length,
+      critical: tickets.filter(t => t.urgency_level === 5).length
+    };
+
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({
+        success: true,
+        data: stats
+      })
+    };
+  } catch (error) {
+    console.error('Error getting ticket stats:', error);
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Failed to get ticket statistics' })
+    };
+  }
+}
+
+// Placeholder functions for other operations
+async function updateTicket(event) {
+  // Similar to updateTicketStatus but for other fields
+  return await updateTicketStatus(event);
+}
+
+async function assignTicket(event) {
+  // Similar to updateTicketStatus but for assignment
+  return await updateTicketStatus(event);
+}
+
+async function deleteTicket(event) {
+  // Similar to updateTicketStatus but for deletion
+  return await updateTicketStatus(event);
+}
+
+async function deleteTicketResponse(event) {
+  // Similar to updateTicketStatus but for response deletion
+  return await updateTicketStatus(event);
+}
+

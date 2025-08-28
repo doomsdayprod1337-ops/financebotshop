@@ -106,21 +106,21 @@ exports.handler = async function(event, context) {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
       },
-      body: JSON.stringify({
-        success: true,
-        message: 'All connection tests passed',
-        tests: {
-          environment: {
-            supabaseUrlExists: !!supabaseUrl,
-            supabaseKeyExists: !!supabaseKey
-          },
-          database: {
-            connection: 'success',
-            userTableAccess: 'success'
+              body: JSON.stringify({
+          success: true,
+          message: 'All connection tests passed',
+          tests: {
+            environment: {
+              supabaseUrlExists: !!supabaseUrl,
+              supabaseKeyExists: !!supabaseKey
+            },
+            database: {
+              connection: 'success',
+              userTableAccess: 'success'
+            }
           }
-        }
-      })
-    });
+        })
+      };
     
   } catch (error) {
     console.error('=== TEST CONNECTION API ERROR ===');

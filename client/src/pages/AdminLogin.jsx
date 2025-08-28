@@ -72,7 +72,7 @@ const AdminLogin = () => {
           </div>
           <h2 className="text-3xl font-bold text-white">Admin Access</h2>
           <p className="mt-2 text-gray-400">
-            Genesis Market Administration Panel
+            Reaper Market Administration Panel
           </p>
         </div>
 

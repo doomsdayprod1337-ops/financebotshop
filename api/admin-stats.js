@@ -17,7 +17,7 @@ async function requireAdmin(event) {
     const token = authHeader.replace('Bearer ', '');
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-key');
     
-    if (decoded.role !== 'admin' && !decoded.isAdmin) {
+    if (!decoded.is_admin && decoded.role !== 'admin' && !decoded.isAdmin) {
       throw new Error('Admin access required');
     }
     

@@ -28,17 +28,17 @@ const Downloads = () => {
       const mockDownloads = [
         {
           id: 1,
-          name: 'Genesis Market Bot v2.1',
-          description: 'Advanced automation bot for Genesis Market with enhanced features',
-          category: 'bots',
+          name: 'Reaper Market Bot v2.1',
+          description: 'Advanced automation bot for Reaper Market with enhanced features',
+          category: 'Automation',
           version: '2.1.0',
           size: '15.2 MB',
-          downloads: 15420,
+          downloads: 1247,
           rating: 4.8,
           lastUpdated: '2024-01-15',
           downloadUrl: '#',
           isPremium: true,
-          tags: ['automation', 'genesis', 'bot', 'premium']
+          tags: ['automation', 'reaper', 'bot', 'premium']
         },
         {
           id: 2,
@@ -70,8 +70,8 @@ const Downloads = () => {
         },
         {
           id: 4,
-          name: 'Genesis Market API Client',
-          description: 'Official API client for integrating with Genesis Market services',
+          name: 'Reaper Market API Client',
+          description: 'Official API client for integrating with Reaper Market services',
           category: 'development',
           version: '1.2.0',
           size: '5.3 MB',
@@ -211,7 +211,7 @@ const Downloads = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Downloads</h1>
-          <p className="text-gray-400">Access tools, bots, and utilities for Genesis Market</p>
+          <p className="text-gray-400">Access tools, bots, and utilities for Reaper Market</p>
         </div>
 
         {/* Search and Filters */}

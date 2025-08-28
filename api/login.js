@@ -1,11 +1,6 @@
-const { createClient } = require('@supabase/supabase-js');
+const { getSupabaseClient } = require('./supabase-client');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
 
 exports.handler = async function(event, context) {
   // Handle CORS
@@ -33,6 +28,9 @@ exports.handler = async function(event, context) {
   }
 
   try {
+    // Initialize Supabase client
+    const supabase = getSupabaseClient();
+    
     console.log('=== LOGIN API START ===');
     
     // Parse request body
@@ -191,7 +189,7 @@ exports.handler = async function(event, context) {
     console.log('User ID being stored in JWT:', user.id);
     console.log('User ID type:', typeof user.id);
     
-    const token = jwt.sign(tokenPayload, jwtSecret, { expiresIn: '1h' });
+    const token = jwt.sign(tokenPayload, jwtSecret, { expiresIn: '24h' });
     console.log('JWT token created successfully, length:', token.length);
 
     // Update last login (don't fail if this fails)

@@ -247,10 +247,22 @@ export const countryFlags = {
   TL: { name: 'Timor-Leste', code: 'tl', region: 'Asia' }
 };
 
-// Utility functions
+// Utility functions - Using emoji flags to avoid loading issues
 export const getFlagUrl = (countryCode, size = 32) => {
-  const code = countryCode?.toLowerCase() || 'us';
-  return `/assets/flags/${code}-${size}.png`;
+  const code = countryCode?.toUpperCase() || 'US';
+  return getFlagEmoji(code);
+};
+
+// Convert country code to flag emoji
+export const getFlagEmoji = (countryCode) => {
+  if (!countryCode || countryCode.length !== 2) return '🏳️';
+  
+  const codePoints = countryCode
+    .toUpperCase()
+    .split('')
+    .map(char => 127397 + char.charCodeAt());
+  
+  return String.fromCodePoint(...codePoints);
 };
 
 export const getCountryName = (countryCode) => {

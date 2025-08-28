@@ -1,36 +1,52 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import Wallet from '../components/Wallet';
 import CountryFlag from '../components/CountryFlag';
+import DepositCreationModal from '../components/DepositCreationModal';
 import { getCountryName, FLAG_SIZES } from '../utils/flags';
+import { getAllBots } from '../data/botDatabase';
+import api from '../config/axios';
 
 const Dashboard = () => {
+  console.log('Dashboard component loading...');
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  console.log('Dashboard - user from context:', user);
+  
   const [botStats, setBotStats] = useState({
-    overall: { country: 'Overall', last24h: 238, lastWeek: 2312, lastMonth: 7881, available: 468484 },
-    countries: [
-      { code: 'ES', last24h: 22, lastWeek: 321, lastMonth: 1026, available: 37137 },
-      { code: 'TR', last24h: 37, lastWeek: 326, lastMonth: 818, available: 26213 },
-      { code: 'PL', last24h: 17, lastWeek: 131, lastMonth: 649, available: 32314 },
-      { code: 'RO', last24h: 18, lastWeek: 187, lastMonth: 586, available: 33448 },
-      { code: 'CL', last24h: 18, lastWeek: 169, lastMonth: 547, available: 9766 },
-      { code: 'US', last24h: 16, lastWeek: 117, lastMonth: 475, available: 6566 },
-      { code: 'IT', last24h: 16, lastWeek: 140, lastMonth: 466, available: 57752 },
-      { code: 'FR', last24h: 12, lastWeek: 125, lastMonth: 457, available: 30454 },
-      { code: 'DE', last24h: 13, lastWeek: 131, lastMonth: 394, available: 12105 },
-      { code: 'PT', last24h: 6, lastWeek: 81, lastMonth: 298, available: 30122 },
-      { code: 'GB', last24h: 9, lastWeek: 56, lastMonth: 229, available: 8851 },
-      { code: 'CZ', last24h: 1, lastWeek: 35, lastMonth: 170, available: 5299 },
-      { code: 'BG', last24h: 6, lastWeek: 41, lastMonth: 158, available: 8102 },
-      { code: 'RS', last24h: 4, lastWeek: 44, lastMonth: 153, available: 3070 },
-      { code: 'NL', last24h: 3, lastWeek: 42, lastMonth: 151, available: 7637 },
-      { code: 'GR', last24h: 2, lastWeek: 38, lastMonth: 145, available: 8603 }
-    ]
+    overall: { country: 'Overall', last24h: 0, lastWeek: 0, lastMonth: 0, available: 0 },
+    countries: []
   });
 
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10); // Show only 10 countries at a time
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Deposit modal state
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [depositAmount, setDepositAmount] = useState(0);
+  const [minimumDepositAmount, setMinimumDepositAmount] = useState(50.00);
+
+  // Load minimum deposit amount on component mount
+  useEffect(() => {
+    loadMinimumDepositAmount();
+  }, []);
+
+  const loadMinimumDepositAmount = async () => {
+    try {
+      const response = await api.get('/api/get-minimum-deposit');
+      if (response.data.success) {
+        setMinimumDepositAmount(response.data.minimumDepositAmount);
+      }
+    } catch (error) {
+      console.error('Error loading minimum deposit amount:', error);
+      // Use default value if API fails
+      setMinimumDepositAmount(50.00);
+    }
+  };
 
   // Filter countries based on search
   const filteredCountries = botStats.countries.filter(country =>
@@ -47,8 +63,49 @@ const Dashboard = () => {
   const totalPages = Math.ceil(filteredCountries.length / itemsPerPage);
 
   useEffect(() => {
-    // In a real app, you'd fetch this data from your API
-    // fetchBotStats();
+    // Generate bot stats from real bot data
+    const bots = getAllBots();
+    
+    // Group bots by country
+    const countryStats = {};
+    let overall24h = 0, overallWeek = 0, overallMonth = 0;
+    
+    bots.forEach(bot => {
+      if (!countryStats[bot.country]) {
+        countryStats[bot.country] = {
+          code: bot.country,
+          last24h: 0,
+          lastWeek: 0,
+          lastMonth: 0,
+          available: 1
+        };
+      } else {
+        countryStats[bot.country].available += 1;
+      }
+      
+      // Add activity data
+      countryStats[bot.country].last24h += bot.last24h || 0;
+      countryStats[bot.country].lastWeek += bot.lastWeek || 0;
+      countryStats[bot.country].lastMonth += bot.lastMonth || 0;
+      
+      overall24h += bot.last24h || 0;
+      overallWeek += bot.lastWeek || 0;
+      overallMonth += bot.lastMonth || 0;
+    });
+    
+    // Convert to array and sort by available bots
+    const countriesArray = Object.values(countryStats).sort((a, b) => b.available - a.available);
+    
+    setBotStats({
+      overall: {
+        country: 'Overall',
+        last24h: overall24h,
+        lastWeek: overallWeek,
+        lastMonth: overallMonth,
+        available: bots.length
+      },
+      countries: countriesArray
+    });
   }, []);
 
   const fetchBotStats = async () => {
@@ -73,6 +130,27 @@ const Dashboard = () => {
     return num.toString();
   };
 
+  // Handle deposit button click
+  const handleDepositFunds = () => {
+    if (!user) {
+      // If user is not logged in, redirect to login
+      navigate('/login');
+      return;
+    }
+    
+    // Show deposit modal with the minimum deposit amount
+    setDepositAmount(minimumDepositAmount); // Use minimum deposit amount from admin settings
+    setShowDepositModal(true);
+  };
+
+  // Handle deposit modal close
+  const handleDepositModalClose = () => {
+    setShowDepositModal(false);
+    setDepositAmount(0);
+  };
+
+
+  
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -96,13 +174,23 @@ const Dashboard = () => {
         <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
           <h3 className="text-lg font-semibold text-white mb-3">Quick Actions</h3>
           <div className="space-y-2">
-            <button className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors">
+            <button 
+              onClick={handleDepositFunds}
+              className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+            >
               Deposit Funds
             </button>
-            <button className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors">
-              Withdraw Funds
+            
+            <button 
+              onClick={() => navigate('/profile')}
+              className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
+            >
+              Profile
             </button>
-            <button className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors">
+            <button 
+              onClick={() => navigate('/deposits')}
+              className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors"
+            >
               View Transactions
             </button>
           </div>
@@ -297,25 +385,50 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
           <h3 className="text-lg font-semibold text-white mb-4">Quick Purchase</h3>
-          <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors">
+          <button 
+            onClick={() => navigate('/bots')}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors"
+          >
             Buy Bot
           </button>
         </div>
         
         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
           <h3 className="text-lg font-semibold text-white mb-4">Generate Fingerprint</h3>
-          <button className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded transition-colors">
+          <button 
+            onClick={() => navigate('/generate-fp')}
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded transition-colors"
+          >
             Create FP
           </button>
         </div>
         
         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
           <h3 className="text-lg font-semibold text-white mb-4">Support</h3>
-          <button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded transition-colors">
+          <button 
+            onClick={() => navigate('/tickets')}
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded transition-colors"
+          >
             Open Ticket
           </button>
         </div>
       </div>
+
+      {/* Deposit Creation Modal */}
+      <DepositCreationModal
+        isOpen={showDepositModal}
+        onClose={handleDepositModalClose}
+        requiredAmount={depositAmount}
+        currentBalance={user?.wallet_balance || 0}
+        itemName="Dashboard Deposit"
+      />
+      
+      {/* Debug Info - Remove this after testing */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed bottom-4 left-4 bg-black bg-opacity-75 text-white p-2 rounded text-xs">
+          Debug: Modal Open: {showDepositModal.toString()}, Amount: {depositAmount}
+        </div>
+      )}
     </div>
   );
 };
