@@ -29,7 +29,16 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 403) {
+      const errorData = error.response?.data;
+      // Handle ban/suspension responses
+      if (errorData?.status && ['banned', 'suspended'].includes(errorData.status)) {
+        // Clear token and redirect to login for banned users
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
+    } else if (error.response?.status === 401) {
       const errorMessage = error.response?.data?.error || error.response?.data?.message;
       
       // Only redirect for specific token-related errors

@@ -129,6 +129,114 @@ exports.handler = async function(event, context) {
       totalUses: inviteCodes.reduce((sum, code) => sum + (code.current_uses || 0), 0)
     } : { total: 0, active: 0, totalUses: 0 };
 
+    // Get content statistics
+    let newsStats = { recent: 0, total: 0 };
+    let wikiStats = { recent: 0, total: 0 };
+    
+    try {
+      // Get news statistics (last 7 days and total)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      const { count: recentNews, error: recentNewsError } = await supabase
+        .from('news')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', sevenDaysAgo.toISOString());
+
+      const { count: totalNews, error: totalNewsError } = await supabase
+        .from('news')
+        .select('*', { count: 'exact', head: true });
+
+      if (!recentNewsError && recentNews !== null) {
+        newsStats.recent = recentNews;
+      }
+      if (!totalNewsError && totalNews !== null) {
+        newsStats.total = totalNews;
+      }
+    } catch (error) {
+      console.log('News table not accessible:', error.message);
+    }
+
+    try {
+      // Get wiki statistics (last 7 days and total)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      const { count: recentWiki, error: recentWikiError } = await supabase
+        .from('wiki_entries')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', sevenDaysAgo.toISOString());
+
+      const { count: totalWiki, error: totalWikiError } = await supabase
+        .from('wiki_entries')
+        .select('*', { count: 'exact', head: true });
+
+      if (!recentWikiError && recentWiki !== null) {
+        wikiStats.recent = recentWiki;
+      }
+      if (!totalWikiError && totalWiki !== null) {
+        wikiStats.total = totalWiki;
+      }
+    } catch (error) {
+      console.log('Wiki entries table not accessible:', error.message);
+    }
+
+    // Get deposit statistics
+    let depositStats = { total: 0, pending: 0, confirmed: 0, failed: 0, recent: 0 };
+    
+    try {
+      const { count: totalDeposits, error: totalDepositsError } = await supabase
+        .from('deposits')
+        .select('*', { count: 'exact', head: true });
+
+      if (!totalDepositsError && totalDeposits !== null) {
+        depositStats.total = totalDeposits;
+      }
+
+      // Get deposits by status
+      const { data: depositsByStatus, error: statusError } = await supabase
+        .from('deposits')
+        .select('status');
+
+      if (!statusError && depositsByStatus) {
+        depositsByStatus.forEach(deposit => {
+          if (deposit.status === 'pending') depositStats.pending++;
+          else if (deposit.status === 'confirmed') depositStats.confirmed++;
+          else if (deposit.status === 'failed') depositStats.failed++;
+        });
+      }
+
+      // Get recent deposits (last 7 days)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      const { count: recentDeposits, error: recentDepositsError } = await supabase
+        .from('deposits')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', sevenDaysAgo.toISOString());
+
+      if (!recentDepositsError && recentDeposits !== null) {
+        depositStats.recent = recentDeposits;
+      }
+    } catch (error) {
+      console.log('Deposits table not accessible:', error.message);
+    }
+
+    // Get recent user registrations (last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const { data: recentRegistrations, error: recentRegistrationsError } = await supabase
+      .from('users')
+      .select('id, username, email, created_at, status')
+      .gte('created_at', sevenDaysAgo.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (recentRegistrationsError) {
+      console.error('Error getting recent registrations:', recentRegistrationsError);
+    }
+
     const stats = {
       totalUsers: totalUsers || 0,
       activeUsers: activeUsers?.length || 0,
@@ -138,7 +246,20 @@ exports.handler = async function(event, context) {
       regularUsers: roleCounts.user || 0,
       inviteCodes: inviteStats.total,
       activeInviteCodes: inviteStats.active,
-      totalInviteUses: inviteStats.totalUses
+      totalInviteUses: inviteStats.totalUses,
+      // Content statistics
+      totalNewsPosts: newsStats.total,
+      recentNewsPosts: newsStats.recent,
+      totalWikiEntries: wikiStats.total,
+      recentWikiEntries: wikiStats.recent,
+      // Deposit statistics
+      totalDeposits: depositStats.total,
+      pendingDeposits: depositStats.pending,
+      confirmedDeposits: depositStats.confirmed,
+      failedDeposits: depositStats.failed,
+      recentDeposits: depositStats.recent,
+      // Recent activity
+      recentRegistrations: recentRegistrations || []
     };
 
     console.log('Admin stats generated successfully');

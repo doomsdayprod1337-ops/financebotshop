@@ -31,6 +31,8 @@ import CCDataDashboard from './pages/CCDataDashboard.jsx';
 import CCImport from './pages/CCImport.jsx';
 import CCManagement from './pages/CCManagement.jsx';
 import CCAnalytics from './pages/CCAnalytics.jsx';
+import Configs from './pages/Configs.jsx';
+import FinanceDocuments from './pages/FinanceDocuments.jsx';
 
 function App() {
   return (
@@ -104,6 +106,8 @@ function App() {
                 <Route path="news" element={<News />} />
                 <Route path="generate-fp" element={<GenerateFP />} />
                 <Route path="credit-cards" element={<CreditCards />} />
+                <Route path="configs" element={<Configs />} />
+                <Route path="finance-documents" element={<FinanceDocuments />} />
                 <Route path="tickets" element={<Tickets />} />
                 <Route path="software" element={<Software />} />
                 <Route path="bin-checker" element={<BinChecker />} />

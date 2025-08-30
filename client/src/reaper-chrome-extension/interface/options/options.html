@@ -1,0 +1,260 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="options.js" type="module" defer></script>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="../theme/switch.css" />
+  <title>Cookie-Reaper Options</title>
+</head>
+
+<body>
+  <div class="container">
+    <fieldset>
+      <legend>Options</legend>
+      <div class="input-container">
+        <label for="advanced-cookie">Show Advanced Cookie Options</label>
+        <label class="switch">
+          <input type="checkbox" id="advanced-cookie" aria-describedby="advanced-cookie-hint" />
+          <span class="slider"></span>
+        </label>
+        <div class="hint" id="advanced-cookie-hint">
+          When Enabled, all the values of a cookie are visible in the
+          interface.<br />
+          When Disabled, only the name and the value of the cookie are visible
+          in the interface.
+        </div>
+      </div>
+
+      <div class="input-container">
+        <label for="devtool-show">Enable Devtool panel</label>
+        <label class="switch">
+          <input type="checkbox" id="devtool-show" aria-describedby="devtool-show-hint" />
+          <span class="slider"></span>
+        </label>
+        <div class="hint" id="devtool-show-hint">
+          When Enabled, Cookie-Reaper will be added to the DevTools tabs.
+          Devtools needs to be restarted to take effect when turning this
+          option off.
+        </div>
+      </div>
+
+      <div class="input-container">
+        <label for="animations-enabled">Enable Animations</label>
+        <label class="switch">
+          <input type="checkbox" id="animations-enabled" aria-describedby="animations-enabled-hint" />
+          <span class="slider"></span>
+        </label>
+        <div class="hint" id="animations-enabled-hint">
+          When Enabled, Cookie-Reaper will show transitions and other various
+          animations in the interface. This is for appearance only.
+        </div>
+      </div>
+
+      <div class="input-container">
+        <label for="export-format">Export Format</label>
+        <select id="export-format" aria-describedby="export-format-hint">
+          <option value="json">JSON</option>
+          <option value="headerstring">Header String</option>
+          <option value="netscape">Netscape</option>
+          <option value="ask">Ask every time</option>
+        </select>
+        <div class="hint" id="export-format-hint">
+          Selects the behavior of the export button. When "Ask every time" is
+          selected, a menu asking you to chose the format will show up when
+          you press the export button.
+        </div>
+      </div>
+
+      <div class="input-container">
+        <label for="extra-info">Show Extra Information</label>
+        <select id="extra-info" aria-describedby="v-hint">
+          <option value="nothing">Nothing</option>
+          <option value="value">Value</option>
+          <option value="domain">Domain</option>
+          <option value="path">Path</option>
+          <option value="expiration">Expiration</option>
+          <option value="samesite">Same Site</option>
+          <option value="hostonly">Host Only</option>
+          <option value="session">Session</option>
+          <option value="secure">Secure</option>
+          <option value="httponly">Http Only</option>
+        </select>
+        <div class="hint" id="extra-info-hint">
+          Selects one extra element to display next to the cookie name in the
+          interface. This can help you identify quickly which cookie you are
+          looking for.
+        </div>
+      </div>
+
+      <div class="input-container">
+        <label for="theme">Theme</label>
+        <select id="theme" aria-describedby="theme-hint">
+          <option value="auto">Auto</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+        <div class="hint" id="theme-hint">
+          When selecting "Auto", Cookie-Reaper will match your browser's theme
+          automatically.
+        </div>
+      </div>
+
+      <div class="input-container">
+        <label for="button-bar-top">Place Button Bar on Top</label>
+        <label class="switch">
+          <input type="checkbox" id="button-bar-top" aria-describedby="button-bar-top-hint" />
+          <span class="slider"></span>
+        </label>
+        <div class="hint" id="button-bar-top-hint">
+          When enabled, the main button bar will be placed at the top of the
+          interface instead of the bottom.
+        </div>
+      </div>
+      
+      <div class="input-container">
+        <label for="ads-enabled">Show Ads</label>
+        <label class="switch">
+          <input type="checkbox" id="ads-enabled" aria-describedby="ads-enabled-hint" />
+          <span class="slider"></span>
+        </label>
+        <div class="hint" id="ads-enabled-hint">
+          When Enabled, Cookie-Reaper will display some small non-intrusive ads at the
+          top of the main interface. These are used to cover the basic operating
+          costs of Cookie-Reaper. Feel free to disable them, but keep in mind
+          that I work on Cookie-Reaper in free time as a personal project.
+          You can thank me with a nice review!
+          <span class="github-sponsor hidden">
+            You can also
+            <a href="https://t.me/LogCachin" target="_blank">
+              Hire me for your next custom project</a>.
+          </span>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>All Cookies</legend>
+      <div class="notice danger">
+        <svg class="icon">
+          <use href="../sprites/solid.svg#exclamation-triangle"></use>
+        </svg>
+        <strong>Be careful!</strong> Operations in this section will apply to ALL sites.
+         <br />
+        Do not share your cookies exported from here to anyone you do not
+        fully trust. Giving some your cookies this way will give them access
+        to every account you are currently logged in.
+      </div>
+      <div class="input-container">
+        Export All Cookies
+        <div class="button-group">
+          <button id="export-all-json">As JSON</button>
+          <button id="export-all-netscape">As Netscape</button>
+        </div>
+        <div class="hint">
+          Header string is not available for browser-wide export since it does
+          not contain information about which site it comes from.
+        </div>
+      </div>
+      <div class="input-container">
+        Delete All Cookies
+        <button class="danger" id="delete-all">Delete All</button>
+        <div class="hint danger">
+          This will delete all the cookies on all the site on this browser.
+          This action is irreversible. Be very careful.
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Cookie Automation</legend>
+      <div class="notice info">
+        <svg class="icon">
+          <use href="../sprites/solid.svg#info-circle"></use>
+        </svg>
+        <strong>Automated Cookie Loading & Validation</strong><br />
+        Automatically load cookies from text files and validate them across domains.
+      </div>
+      
+      <div class="input-container">
+        <label for="automation-files">Cookie Text Files</label>
+        <input 
+          type="file" 
+          id="automation-files" 
+          multiple
+          accept=".txt,.cookies"
+          aria-describedby="automation-files-hint" 
+        />
+        <div class="hint" id="automation-files-hint">
+          Select one or more Netscape formatted cookie text files.
+          Each file should contain cookies for one or more domains.
+        </div>
+      </div>
+
+      <div class="input-container">
+        <label for="validation-selector">Validation Selector</label>
+        <input 
+          type="text" 
+          id="validation-selector" 
+          placeholder=".user-info, .profile, .dashboard"
+          value=".user-info, .profile, .dashboard"
+          aria-describedby="validation-selector-hint" 
+        />
+        <div class="hint" id="validation-selector-hint">
+          CSS selector(s) to identify successful authentication or validation.
+          Multiple selectors can be separated by commas.
+        </div>
+      </div>
+
+      <div class="input-container">
+        <div class="button-group">
+          <button id="run-automation" class="primary">Run Automation</button>
+          <button id="test-files">Test Files</button>
+          <button id="clear-automation" class="secondary">Clear Data</button>
+        </div>
+        <div class="hint">
+          Run automation to load cookies and validate domains, or test the loaded cookie files.
+        </div>
+      </div>
+
+      <div class="input-container" id="automation-results" style="display: none;">
+        <label>Last Automation Results</label>
+        <div id="results-content" class="results-display"></div>
+        <div class="hint">
+          Results from the last automation run. Click "Run Automation" to start a new session.
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>About Cookie-Reaper</legend>
+      <p>
+        Cookie-Reaper is made by Reaper Market and is fully open source.
+      </p>
+      <p>
+        View the
+        <a href="https://github.com/ReaperMarket/Cookie-Reaper" target="_blank">Source code</a>. Read the
+        <a href="https://reaper-market.com/privacy.html" target="_blank">Privacy Policy</a>. <br />
+        Cookie-Reaper is published under
+        <a href="https://github.com/ReaperMarket/Cookie-Reaper/blob/master/LICENSE" target="_blank">the GPL-3.0
+          license</a>.
+      </p>
+      <p class="github-sponsor hidden">
+        <em>Are you enjoying Cookie-Reaper?</em><br />
+        I would be really greatful if you considered supporting my work by
+        sponsoring me on Github.
+        <a href="https://t.me/LogCachin" target="_blank">Learn more</a>.
+      </p>
+      <p class="disclaimer">
+        This project is not an official Google project. It is not supported by
+        Google and Google specifically disclaims all warranties as to its
+        quality, merchantability, or fitness for a particular purpose.
+      </p>
+    </fieldset>
+  </div>
+</body>
+
+</html>

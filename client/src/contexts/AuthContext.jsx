@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../config/axios';
+import BanNotification from '../components/BanNotification';
 
 const AuthContext = createContext();
 
@@ -16,6 +17,7 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
   const [lastActivity, setLastActivity] = useState(Date.now());
+  const [banInfo, setBanInfo] = useState(null);
 
   // Update last activity on user interaction
   const updateActivity = () => {
@@ -207,8 +209,22 @@ export const AuthProvider = ({ children }) => {
         return;
       }
       
-      // Handle different types of 401 errors
-      if (error.response?.status === 401) {
+      // Handle different types of errors
+      if (error.response?.status === 403) {
+        // Handle ban/suspension responses
+        const errorData = error.response?.data;
+        if (errorData?.status && ['banned', 'suspended'].includes(errorData.status)) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('User is banned/suspended:', errorData.status);
+          }
+          setBanInfo({
+            status: errorData.status,
+            message: errorData.message || 'Your account has been restricted'
+          });
+          logout();
+          return;
+        }
+      } else if (error.response?.status === 401) {
         const errorMessage = error.response?.data?.error || error.response?.data?.message;
         
         if (errorMessage === 'Invalid token' || errorMessage === 'Invalid or expired token') {
@@ -288,6 +304,22 @@ export const AuthProvider = ({ children }) => {
         console.error('=== AUTH CONTEXT: Login failed ===');
         console.error('Error details:', error);
         console.error('Response data:', error.response?.data);
+      }
+      
+      // Handle ban/suspension responses
+      if (error.response?.status === 403) {
+        const errorData = error.response?.data;
+        if (errorData?.status && ['banned', 'suspended'].includes(errorData.status)) {
+          setBanInfo({
+            status: errorData.status,
+            message: errorData.message || 'Your account has been restricted'
+          });
+          return { 
+            success: false, 
+            error: errorData.error || 'Account restricted',
+            status: errorData.status
+          };
+        }
       }
       
       return { 
@@ -416,16 +448,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const clearBanInfo = () => {
+    setBanInfo(null);
+  };
+
   const value = {
     user,
     token,
     loading,
     isAuthenticated: !!user,
+    banInfo,
     login,
     logout,
     changePassword,
     refreshSession,
-    syncWallet
+    syncWallet,
+    clearBanInfo
   };
 
   // Only log state changes in development mode and when there are actual changes
@@ -443,6 +481,13 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={value}>
       {children}
+      {banInfo && (
+        <BanNotification
+          status={banInfo.status}
+          message={banInfo.message}
+          onClose={clearBanInfo}
+        />
+      )}
     </AuthContext.Provider>
   );
 };

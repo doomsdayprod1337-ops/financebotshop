@@ -250,18 +250,31 @@ exports.handler = async function(event, context) {
       email: user.email 
     });
 
-    // Check if user is active
+    // Check if user is banned or suspended
     if (user.status && user.status !== 'active') {
       console.log('User account not active:', user.status);
+      
+      let errorMessage = 'Your account has been deactivated';
+      let errorType = 'Account deactivated';
+      
+      if (user.status === 'banned') {
+        errorMessage = 'Your account has been banned by an administrator';
+        errorType = 'Account banned';
+      } else if (user.status === 'suspended') {
+        errorMessage = 'Your account has been suspended by an administrator';
+        errorType = 'Account suspended';
+      }
+      
       return {
-        statusCode: 401,
+        statusCode: 403,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*'
         },
         body: JSON.stringify({ 
-          error: 'Account is not active',
-          message: 'Your account has been deactivated',
+          error: errorType,
+          message: errorMessage,
+          status: user.status,
           success: false
         })
       };

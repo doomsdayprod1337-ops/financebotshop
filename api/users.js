@@ -95,11 +95,91 @@ module.exports = async function(event, context) {
       };
     }
 
-    // Get all users (only email and username for privacy)
+    // Get all users with detailed information for admin view
     const { data: users, error: usersError } = await supabase
       .from('users')
-      .select('id, email, username, created_at')
+      .select(`
+        id, 
+        email, 
+        username, 
+        created_at, 
+        status, 
+        role, 
+        is_admin, 
+        last_login,
+        wallet_balance,
+        registered_ip,
+        last_ip_address
+      `)
       .order('created_at', { ascending: false });
+
+    if (usersError) {
+      console.error('Error fetching users:', usersError);
+      return {
+        statusCode: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'Failed to fetch users' });
+      };
+    }
+
+    // Get additional user statistics for each user
+    const enhancedUsers = await Promise.all(users.map(async (user) => {
+      try {
+        // Get user's total deposits
+        const { count: totalDeposits, error: depositsError } = await supabase
+          .from('deposits')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+
+        // Get user's total purchases
+        const { count: totalPurchases, error: purchasesError } = await supabase
+          .from('purchases')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+
+        // Get user's total support tickets
+        const { count: totalTickets, error: ticketsError } = await supabase
+          .from('tickets')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+
+        // Get user's total deposit amount
+        const { data: deposits, error: depositAmountError } = await supabase
+          .from('deposits')
+          .select('amount, usd_amount')
+          .eq('user_id', user.id)
+          .eq('status', 'confirmed');
+
+        const totalDepositAmount = deposits && !depositAmountError ? 
+          deposits.reduce((sum, deposit) => sum + (deposit.usd_amount || deposit.amount || 0), 0) : 0;
+
+        return {
+          ...user,
+          totalDeposits: totalDeposits || 0,
+          totalPurchases: totalPurchases || 0,
+          totalTickets: totalTickets || 0,
+          totalDepositAmount: totalDepositAmount || 0,
+          wallet_balance: user.wallet_balance || 0,
+          registered_ip: user.registered_ip || 'N/A',
+          last_ip_address: user.last_ip_address || 'N/A'
+        };
+      } catch (error) {
+        console.error(`Error getting stats for user ${user.id}:`, error);
+        return {
+          ...user,
+          totalDeposits: 0,
+          totalPurchases: 0,
+          totalTickets: 0,
+          totalDepositAmount: 0,
+          wallet_balance: user.wallet_balance || 0,
+          registered_ip: user.registered_ip || 'N/A',
+          last_ip_address: user.last_ip_address || 'N/A'
+        };
+      }
+    }));
 
     if (usersError) {
       console.error('Error fetching users:', usersError);
@@ -121,8 +201,8 @@ module.exports = async function(event, context) {
       },
       body: JSON.stringify({
         success: true,
-        users: users || [],
-        count: users ? users.length : 0
+        users: enhancedUsers || [],
+        count: enhancedUsers ? enhancedUsers.length : 0
       })
     };
 

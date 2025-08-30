@@ -1,0 +1,40 @@
+{
+	"manifest_version": 3,
+	"name": "Cookie Reaper - Device Emulator",
+	"version": "2.0.0",
+	"author": "Reaper Market",
+	"description": "Advanced cookie replaying tool for perfect device emulation from stealer logs. Requires activation key from reaper-market.com",
+	"background": {
+		"service_worker": "cookie-reaper-service-worker.js"
+	},
+	"action": {
+		"default_icon": {
+			"16": "icons/cookie-filled-small.svg",
+			"32": "icons/cookie-filled-small.svg",
+			"48": "icons/cookie-filled.svg",
+			"128": "icons/cookie-filled.svg"
+		},
+		"default_title": "Cookie Reaper - Device Emulator",
+		"default_popup": "interface/popup/first-launch-popup.html"
+	},
+	"devtools_page": "interface/devtools/devtool.html",
+	"options_ui": {
+		"page": "interface/options/options.html"
+	},
+	"permissions": [
+		"cookies",
+		"tabs",
+		"storage",
+		"scripting"
+	],
+	"host_permissions": [
+		"<all_urls>"
+	],
+	"icons": {
+		"16": "icons/cookie-filled-small.svg",
+		"19": "icons/cookie-filled-small.svg",
+		"32": "icons/cookie-filled-small.svg",
+		"48": "icons/cookie-filled.svg",
+		"128": "icons/cookie-filled.svg"
+	}
+}

@@ -1,27 +1,68 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../config/axios';
 
 const ReaperWiki = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [searchQuery, setSearchQuery] = useState('');
+  const [wikiEntries, setWikiEntries] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [wikiCount, setWikiCount] = useState(0);
 
+  // Load wiki entries from database
+  useEffect(() => {
+    loadWikiEntries();
+  }, []);
+
+  // Load wiki count
+  useEffect(() => {
+    loadWikiCount();
+  }, []);
+
+  const loadWikiEntries = async () => {
+    try {
+      setIsLoading(true);
+      const response = await api.get('/api/wiki-management');
+      if (response.data.success) {
+        setWikiEntries(response.data.wikiEntries || []);
+      }
+    } catch (error) {
+      console.error('Error loading wiki entries:', error);
+      setWikiEntries([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadWikiCount = async () => {
+    try {
+      const response = await api.get('/api/content-stats?timePeriod=7d');
+      if (response.data.success) {
+        setWikiCount(response.data.stats.wiki.recent);
+      }
+    } catch (error) {
+      console.error('Error loading wiki count:', error);
+    }
+  };
+
+  // Transform database entries to match expected format
   const wikiContent = {
     overview: {
       title: "Reaper Market Overview",
       content: [
         {
           section: "What is Reaper Market?",
-          text: "Reaper Market is a premium, invitation-only marketplace for stolen credentials, digital fingerprints, and cybercrime tools. Our platform provides access to high-quality stolen data from infected devices worldwide.",
+          text: "Reaper Market is a premium, invitation-only marketplace for HQ credentials, digital fingerprints, and exclusively developed private tools. Our platform provides access to high-quality, private data from infected devices worldwide.",
           subsections: [
             "Premium credential marketplace",
             "Bot dump collections",
-            "Professional cybercrime services",
+            "Professional services",
             "Secure and anonymous transactions"
           ]
         },
         {
           section: "Platform Features",
-          text: "Our platform offers a comprehensive suite of tools and services designed for professional cybercriminals and security researchers.",
+          text: "Our platform offers a comprehensive suite of tools and services designed for professionals and newbies alike.",
           subsections: [
             "Advanced filtering and search",
             "Real-time inventory updates",
@@ -87,7 +128,7 @@ const ReaperWiki = () => {
       content: [
         {
           section: "Credit Cards",
-          text: "Premium stolen credit card data with full details including CVV, expiration dates, and cardholder information.",
+          text: "Premium credit card data with full details including CVV, expiration dates, and cardholder information.",
           details: [
             "Card numbers and BIN information",
             "Bank details and locations",
@@ -109,7 +150,7 @@ const ReaperWiki = () => {
         },
         {
           section: "Services",
-          text: "Professional cybercrime services including custom malware development and targeted attacks.",
+          text: "Professional services including custom development, targeted attacks, and more.",
           details: [
             "Custom malware development",
             "Targeted phishing campaigns",
@@ -338,6 +379,9 @@ const ReaperWiki = () => {
           <p className="text-gray-400 mt-2">Comprehensive guide to using Reaper Market</p>
         </div>
         <div className="flex items-center space-x-4">
+          {wikiCount > 0 && (
+            <span className="bg-purple-500 text-white text-xs px-3 py-2 rounded-full">{wikiCount} new entries</span>
+          )}
           <Link
             to="/invites"
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
@@ -386,7 +430,12 @@ const ReaperWiki = () => {
 
       {/* Content Area */}
       <div className="bg-gray-800 rounded-lg border border-gray-700 p-6 min-h-[600px]">
-        {searchQuery ? (
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            <p className="text-gray-300 mt-2">Loading wiki content...</p>
+          </div>
+        ) : searchQuery ? (
           // Search Results
           <div>
             <h2 className="text-2xl font-bold text-white mb-6">

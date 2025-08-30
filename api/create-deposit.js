@@ -68,7 +68,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const { amount, currency, payment_processor = 'manual' } = body;
+    const { amount, currency, payment_processor = 'manual', usd_amount, crypto_amount, selected_currency } = body;
 
     // Validate required fields
     if (!amount || !currency) {
@@ -79,12 +79,39 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Validate amount
+    // Validate amount (USD amount)
     if (isNaN(amount) || amount <= 0) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({ error: 'Amount must be a positive number' })
+      };
+    }
+
+    // Check if user already has an active deposit
+    const { data: existingDeposits, error: existingError } = await supabase
+      .from('deposits')
+      .select('id, status, created_at')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .eq('status', 'pending');
+
+    if (existingError) {
+      console.error('Error checking existing deposits:', existingError);
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: 'Unable to check existing deposits' })
+      };
+    }
+
+    if (existingDeposits && existingDeposits.length > 0) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ 
+          error: 'You already have a pending deposit. Please wait for it to be confirmed or expired before creating a new one.' 
+        })
       };
     }
 
@@ -137,31 +164,12 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Validate amount limits
-    if (amount < currencyConfig.min_amount) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ 
-          error: `Amount must be at least ${currencyConfig.min_amount} ${currency}` 
-        })
-      };
-    }
-
-    if (amount > currencyConfig.max_amount) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ 
-          error: `Amount cannot exceed ${currencyConfig.max_amount} ${currency}` 
-        })
-      };
-    }
-
     // Get wallet address based on payment processor
     let walletAddress = '';
     let networkFee = currencyConfig.network_fee || 0;
     let expiresAt = null;
+    let requiredConfirmations = currencyConfig.required_confirmations || 6;
+    let timeoutAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
 
     if (payment_processor === 'manual') {
       // For manual mode, use the configured wallet address
@@ -188,20 +196,28 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Create the deposit record
+    // Create the deposit record with enhanced information
+    const depositData = {
+      user_id: userId,
+      amount: amount, // USD amount
+      currency: currency,
+      payment_processor: payment_processor,
+      status: 'pending',
+      wallet_address: walletAddress,
+      network_fee: networkFee,
+      required_confirmations: requiredConfirmations,
+      expires_at: expiresAt,
+      timeout_at: timeoutAt,
+      is_active: true, // This will be the only active deposit for this user
+      // Add new fields for better tracking
+      usd_amount: usd_amount || amount,
+      crypto_amount: crypto_amount || null,
+      exchange_rate: crypto_amount && usd_amount ? (parseFloat(usd_amount) / parseFloat(crypto_amount)) : null
+    };
+
     const { data: deposit, error: depositError } = await supabase
       .from('deposits')
-      .insert([{
-        user_id: userId,
-        amount: amount,
-        currency: currency,
-        payment_processor: payment_processor,
-        status: 'pending',
-        wallet_address: walletAddress,
-        network_fee: networkFee,
-                 required_confirmations: 4, // Use 4 confirmations by default
-        expires_at: expiresAt
-      }])
+      .insert([depositData])
       .select()
       .single();
 
@@ -214,7 +230,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Return deposit information
+    // Return enhanced deposit information
     return {
       statusCode: 201,
       headers,
@@ -222,17 +238,30 @@ exports.handler = async (event, context) => {
         success: true,
         deposit: {
           id: deposit.id,
-          amount: deposit.amount,
+          amount: deposit.amount, // USD amount
           currency: deposit.currency,
           status: deposit.status,
           wallet_address: deposit.wallet_address,
           network_fee: deposit.network_fee,
+          required_confirmations: deposit.required_confirmations,
           expires_at: deposit.expires_at,
-          created_at: deposit.created_at
+          timeout_at: deposit.timeout_at,
+          created_at: deposit.created_at,
+          usd_amount: deposit.usd_amount,
+          crypto_amount: deposit.crypto_amount,
+          exchange_rate: deposit.exchange_rate
         },
         instructions: walletSettings.manual_settings?.instructions || 
-          `Send exactly ${amount} ${currency} to the address below and include your order ID in the memo/note field.`,
-        message: 'Deposit created successfully. Please send the payment to the provided address.'
+          `Send exactly ${crypto_amount || 'the calculated amount'} ${currency} to the address below and include your order ID in the memo/note field.`,
+        message: 'Deposit created successfully. Please send the payment to the provided address.',
+        summary: {
+          usd_amount: amount,
+          crypto_amount: crypto_amount,
+          currency: currency,
+          network_fee: networkFee,
+          required_confirmations: requiredConfirmations,
+          timeout_at: timeoutAt
+        }
       })
     };
 

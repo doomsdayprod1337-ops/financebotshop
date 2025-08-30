@@ -259,8 +259,9 @@ async function getAvailableCreditCards(event) {
 
     // Try to query the view first, fallback to direct table query
     let query = supabase
-      .from('available_credit_cards')
-      .select('*', { count: 'exact' });
+      .from('credit_cards')  // ✅ Use direct table instead of view
+      .select('*', { count: 'exact' })
+      .eq('status', 'available');  // ✅ Add status filter directly
 
     // Apply price filters
     if (minPrice) {
@@ -272,7 +273,7 @@ async function getAvailableCreditCards(event) {
 
     // Apply search
     if (search) {
-      query = query.or(`card_number.ilike.%${search}%,card_type.ilike.%${search}%`);
+      query = query.or(`card_number.ilike.%${search}%,bank.ilike.%${search}%`);
     }
 
     // Apply pagination
@@ -284,39 +285,39 @@ async function getAvailableCreditCards(event) {
 
     let { data: creditCards, error, count } = await query;
 
-    // If view is empty, try direct table query
-    if (error || !creditCards || creditCards.length === 0) {
-      console.log('View query failed or empty, trying direct table query...');
-      
-      query = supabase
-        .from('credit_cards')
-        .select('*', { count: 'exact' })
-        .eq('status', 'available');
-
-      // Apply price filters
-      if (minPrice) {
-        query = query.gte('price', parseFloat(minPrice));
-      }
-      if (maxPrice) {
-        query = query.lte('price', parseFloat(maxPrice));
-      }
-
-      // Apply search
-      if (search) {
-        query = query.or(`card_number.ilike.%${search}%,card_type.ilike.%${search}%`);
-      }
-
-      // Apply pagination
-      query = query.range(offset, offset + limit - 1);
-
-      // Order by price asc for users
-      query = query.order('price', { ascending: true });
-
-      const result = await query;
-      creditCards = result.data;
-      error = result.error;
-      count = result.count;
-    }
+    // Remove the fallback logic since we're using direct table now
+    // if (error || !creditCards || creditCards.length === 0) {
+    //   console.log('View query failed or empty, trying direct table query...');
+    //   
+    //   query = supabase
+    //     .from('credit_cards')
+    //     .select('*', { count: 'exact' })
+    //     .eq('status', 'available');
+    //
+    //   // Apply price filters
+    //   if (minPrice) {
+    //     query = query.gte('price', parseFloat(minPrice));
+    //   }
+    //   if (maxPrice) {
+    //     query = query.lte('price', parseFloat(maxPrice));
+    //   }
+    //
+    //   // Apply search
+    //   if (search) {
+    //     query = query.or(`card_number.ilike.%${search}%,bank.ilike.%${search}%`);
+    //   }
+    //
+    //   // Apply pagination
+    //   query = query.range(offset, offset + limit - 1);
+    //
+    //   // Order by price asc for users
+    //   query = query.order('price', { ascending: true });
+    //
+    //   const result = await query;
+    //   creditCards = result.data;
+    //   error = result.error;
+    //   count = result.count;
+    // }
 
     if (error) {
       throw error;
@@ -362,8 +363,9 @@ async function debugCreditCards(event) {
 
     // Check what's in the available_credit_cards view
     const { data: availableCards, error: availableError } = await supabase
-      .from('available_credit_cards')
+      .from('credit_cards')  // ✅ Use direct table instead of view
       .select('*')
+      .eq('status', 'available')  // ✅ Add status filter
       .limit(10);
 
     // Get table structure

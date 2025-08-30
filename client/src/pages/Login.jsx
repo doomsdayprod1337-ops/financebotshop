@@ -65,6 +65,14 @@ const Login = () => {
         }
       } else {
         console.log('Login failed:', result.error);
+        
+        // Handle ban/suspension responses
+        if (result.status && ['banned', 'suspended'].includes(result.status)) {
+          // Don't show error message for banned users - the ban notification will handle it
+          console.log('User is banned/suspended:', result.status);
+          return; // Exit early to prevent showing generic error
+        }
+        
         setError(result.error || 'Login failed. Please try again.');
       }
     } catch (error) {

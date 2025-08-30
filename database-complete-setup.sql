@@ -120,10 +120,10 @@ VALUES (1, FALSE, TRUE, TRUE, 10, 50.00,
 CREATE TABLE IF NOT EXISTS deposits (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID, -- Will add foreign key constraint after table creation
-    amount DECIMAL(20,8) NOT NULL,
+    amount DECIMAL(20,8) NOT NULL, -- USD amount
     currency VARCHAR(10) NOT NULL, -- BTC, ETH, LTC, etc.
     payment_processor VARCHAR(50) DEFAULT 'manual', -- manual, coinbase, nowpayments, bitpay
-    status VARCHAR(50) DEFAULT 'pending', -- pending, confirmed, failed, expired
+    status VARCHAR(50) DEFAULT 'pending', -- pending, confirmed, failed, expired, timed_out
     transaction_hash VARCHAR(255), -- Blockchain transaction hash
     wallet_address VARCHAR(255), -- Destination wallet address
     network_fee DECIMAL(20,8) DEFAULT 0,
@@ -131,6 +131,15 @@ CREATE TABLE IF NOT EXISTS deposits (
     required_confirmations INTEGER DEFAULT 6,
     expires_at TIMESTAMP WITH TIME ZONE,
     confirmed_at TIMESTAMP WITH TIME ZONE,
+    admin_confirmed_at TIMESTAMP WITH TIME ZONE, -- When admin confirms the deposit
+    admin_confirmed_by UUID, -- Which admin confirmed it
+    -- Enhanced fields for better tracking
+    usd_amount DECIMAL(20,8), -- USD amount (redundant with amount for clarity)
+    crypto_amount DECIMAL(20,8), -- Actual crypto amount to send
+    exchange_rate DECIMAL(20,8), -- Exchange rate at time of deposit
+    -- New fields for transaction control
+    is_active BOOLEAN DEFAULT TRUE, -- Only one active deposit per user
+    timeout_at TIMESTAMP WITH TIME ZONE, -- 1 hour timeout
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -344,6 +353,59 @@ CREATE TABLE IF NOT EXISTS credit_cards (
 );
 
 -- ============================================================================
+-- CONTENT MANAGEMENT TABLES
+-- ============================================================================
+
+-- Create news table
+CREATE TABLE IF NOT EXISTS news (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    full_content TEXT,
+    category VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create wiki_entries table
+CREATE TABLE IF NOT EXISTS wiki_entries (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    category VARCHAR(100) NOT NULL,
+    section VARCHAR(255),
+    subsections TEXT[], -- Array of strings
+    steps TEXT[], -- Array of strings
+    details TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_news_category ON news(category);
+CREATE INDEX IF NOT EXISTS idx_news_created_at ON news(created_at);
+CREATE INDEX IF NOT EXISTS idx_wiki_category ON wiki_entries(category);
+CREATE INDEX IF NOT EXISTS idx_wiki_created_at ON wiki_entries(created_at);
+
+-- Create function to update updated_at timestamp (if not already exists)
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Create triggers to automatically update updated_at
+CREATE TRIGGER update_news_updated_at 
+    BEFORE UPDATE ON news 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_wiki_updated_at 
+    BEFORE UPDATE ON wiki_entries 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================================================
 -- TICKET SYSTEM
 -- ============================================================================
 
@@ -351,25 +413,29 @@ CREATE TABLE IF NOT EXISTS credit_cards (
 CREATE TABLE IF NOT EXISTS tickets (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    subject VARCHAR(255) NOT NULL,
+    title VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
-    status VARCHAR(50) DEFAULT 'open', -- open, in_progress, resolved, closed
+    status VARCHAR(50) DEFAULT 'open', -- open, in_progress, waiting_for_user, resolved, closed
     priority VARCHAR(20) DEFAULT 'medium', -- low, medium, high, urgent
-    category VARCHAR(100),
-    assigned_to UUID REFERENCES users(id),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    resolved_at TIMESTAMP
+    category VARCHAR(50) DEFAULT 'general',
+    assigned_admin_id UUID REFERENCES users(id),
+    attachments JSONB DEFAULT '[]',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    closed_at TIMESTAMP WITH TIME ZONE,
+    closed_by UUID REFERENCES users(id)
 );
 
--- Ticket responses table
-CREATE TABLE IF NOT EXISTS ticket_responses (
+-- Ticket replies table
+CREATE TABLE IF NOT EXISTS ticket_replies (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     message TEXT NOT NULL,
-    is_internal BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    is_admin_reply BOOLEAN DEFAULT FALSE,
+    attachments JSONB DEFAULT '[]',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ============================================================================
@@ -501,7 +567,15 @@ CREATE INDEX IF NOT EXISTS idx_referrals_referrer_id ON referrals(referrer_id);
 CREATE INDEX IF NOT EXISTS idx_referrals_referred_id ON referrals(referred_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_user_id ON tickets(user_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);
+CREATE INDEX IF NOT EXISTS idx_tickets_category ON tickets(category);
 CREATE INDEX IF NOT EXISTS idx_tickets_priority ON tickets(priority);
+CREATE INDEX IF NOT EXISTS idx_tickets_created_at ON tickets(created_at);
+CREATE INDEX IF NOT EXISTS idx_tickets_assigned_admin_id ON tickets(assigned_admin_id);
+
+-- Ticket replies indexes
+CREATE INDEX IF NOT EXISTS idx_ticket_replies_ticket_id ON ticket_replies(ticket_id);
+CREATE INDEX IF NOT EXISTS idx_ticket_replies_user_id ON ticket_replies(user_id);
+CREATE INDEX IF NOT EXISTS idx_ticket_replies_created_at ON ticket_replies(created_at);
 CREATE INDEX IF NOT EXISTS idx_countries_code ON countries(code);
 
 -- Credit card indexes
@@ -551,6 +625,20 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_nowpayments_invoices_updated_at') THEN
         CREATE TRIGGER update_nowpayments_invoices_updated_at 
         BEFORE UPDATE ON nowpayments_invoices
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    END IF;
+    
+    -- Tickets trigger
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_tickets_updated_at') THEN
+        CREATE TRIGGER update_tickets_updated_at 
+        BEFORE UPDATE ON tickets
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    END IF;
+    
+    -- Ticket replies trigger
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_ticket_replies_updated_at') THEN
+        CREATE TRIGGER update_ticket_replies_updated_at 
+        BEFORE UPDATE ON ticket_replies
         FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
     END IF;
 END $$;
@@ -689,6 +777,116 @@ COMMENT ON FUNCTION update_user_wallet(UUID, DECIMAL, VARCHAR) IS 'Updates user 
 COMMENT ON FUNCTION update_updated_at_column() IS 'Automatically updates the updated_at timestamp column';
 
 -- ============================================================================
+-- ROW LEVEL SECURITY (RLS) POLICIES
+-- ============================================================================
+
+-- Enable RLS on tickets and ticket_replies tables
+ALTER TABLE tickets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ticket_replies ENABLE ROW LEVEL SECURITY;
+
+-- RLS policy for tickets: users can only see their own tickets, admins can see all
+CREATE POLICY "Users can view own tickets" ON tickets
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can view all tickets" ON tickets
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM users 
+            WHERE users.id = auth.uid() 
+            AND users.is_admin = TRUE
+        )
+    );
+
+CREATE POLICY "Users can create tickets" ON tickets
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own tickets" ON tickets
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can update all tickets" ON tickets
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM users 
+            WHERE users.id = auth.uid() 
+            AND users.is_admin = TRUE
+        )
+    );
+
+CREATE POLICY "Admins can delete tickets" ON tickets
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM users 
+            WHERE users.id = auth.uid() 
+            AND users.is_admin = TRUE
+        )
+    );
+
+-- RLS policy for ticket replies: users can see replies to tickets they own, admins can see all
+CREATE POLICY "Users can view replies to own tickets" ON ticket_replies
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM tickets 
+            WHERE tickets.id = ticket_replies.ticket_id 
+            AND tickets.user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Admins can view all replies" ON ticket_replies
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM users 
+            WHERE users.id = auth.uid() 
+            AND users.is_admin = TRUE
+        )
+    );
+
+CREATE POLICY "Users can create replies to own tickets" ON ticket_replies
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM tickets 
+            WHERE tickets.id = ticket_replies.ticket_id 
+            AND tickets.user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Admins can create replies to any ticket" ON ticket_replies
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM users 
+            WHERE users.id = auth.uid() 
+            AND users.is_admin = TRUE
+        )
+    );
+
+CREATE POLICY "Users can update own replies" ON ticket_replies
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can update all replies" ON ticket_replies
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM users 
+            WHERE users.id = auth.uid() 
+            AND users.is_admin = TRUE
+        )
+    );
+
+CREATE POLICY "Users can delete own replies" ON ticket_replies
+    FOR DELETE USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can delete all replies" ON ticket_replies
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM users 
+            WHERE users.id = auth.uid() 
+            AND users.is_admin = TRUE
+        )
+    );
+
+-- Grant necessary permissions
+GRANT SELECT, INSERT, UPDATE, DELETE ON tickets TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ticket_replies TO authenticated;
+
+-- ============================================================================
 -- VERIFICATION QUERY
 -- ============================================================================
 
@@ -700,7 +898,7 @@ SELECT
     is_nullable,
     column_default
 FROM information_schema.columns 
-WHERE table_name IN ('admin_settings', 'deposits', 'crypto_transactions', 'payment_webhooks', 'nowpayments_invoices', 'users', 'credit_cards', 'tickets', 'countries', 'invite_codes', 'enhanced_invite_codes')
+WHERE table_name IN ('admin_settings', 'deposits', 'crypto_transactions', 'payment_webhooks', 'nowpayments_invoices', 'users', 'credit_cards', 'news', 'wiki_entries', 'tickets', 'ticket_replies', 'countries', 'invite_codes', 'enhanced_invite_codes')
 ORDER BY table_name, ordinal_position;
 
 -- ============================================================================
@@ -722,7 +920,10 @@ FROM (
     UNION ALL SELECT 'nowpayments_invoices'
     UNION ALL SELECT 'users'
     UNION ALL SELECT 'credit_cards'
+    UNION ALL SELECT 'news'
+    UNION ALL SELECT 'wiki_entries'
     UNION ALL SELECT 'tickets'
+    UNION ALL SELECT 'ticket_replies'
     UNION ALL SELECT 'countries'
     UNION ALL SELECT 'invite_codes'
     UNION ALL SELECT 'enhanced_invite_codes'
@@ -739,10 +940,11 @@ WHERE existing_tables.table_name IS NOT NULL;
 DO $$
 BEGIN
     RAISE NOTICE 'Finance Shop Bot complete database setup finished successfully!';
-    RAISE NOTICE 'Tables created: admin_settings, deposits, crypto_transactions, payment_webhooks, nowpayments_invoices, users, products, orders, cart, transactions, referrals, credit_cards, tickets, countries, invite_codes, enhanced_invite_codes';
+    RAISE NOTICE 'Tables created: admin_settings, deposits, crypto_transactions, payment_webhooks, nowpayments_invoices, users, products, orders, cart, transactions, referrals, credit_cards, news, wiki_entries, tickets, ticket_replies, countries, invite_codes, enhanced_invite_codes';
     RAISE NOTICE 'Default admin user created: admin@financeshop.com / admin123';
     RAISE NOTICE 'Default invite codes created: WELCOME2024, PREMIUM2024';
     RAISE NOTICE 'Admin settings initialized with default values';
     RAISE NOTICE 'Crypto deposits system ready';
     RAISE NOTICE 'NowPayments integration ready';
+    RAISE NOTICE 'Content management system ready (news and wiki)';
 END $$;

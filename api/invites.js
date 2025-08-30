@@ -44,18 +44,25 @@ export default async function handler(req, res) {
           throw invitesError;
         }
 
-        res.status(200).json({
-          success: true,
-          invites: invites || []
-        });
-        break;
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({
+            success: true,
+            invites: invites || []
+          })
+        };
 
       case 'POST':
         // Create new invite code
         const { type = 'standard', expires_in = 30 } = req.body;
         
         if (!['standard', 'premium', 'vip'].includes(type)) {
-          return res.status(400).json({ error: 'Invalid invite type' });
+          return {
+            statusCode: 400,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+            body: JSON.stringify({ error: 'Invalid invite type' })
+          };
         }
 
         const inviteCode = 'INV' + Math.random().toString(36).substr(2, 8).toUpperCase();
@@ -79,28 +86,42 @@ export default async function handler(req, res) {
           throw createError;
         }
 
-        res.status(201).json({
-          success: true,
-          message: 'Invite code created successfully',
-          invite: newInvite
-        });
-        break;
+        return {
+          statusCode: 201,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({
+            success: true,
+            message: 'Invite code created successfully',
+            invite: newInvite
+          })
+        };
 
       default:
-        res.setHeader('Allow', ['GET', 'POST']);
-        return res.status(405).json({ error: 'Method not allowed' });
+        return {
+          statusCode: 405,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ error: 'Method not allowed' })
+        };
     }
 
   } catch (error) {
     console.error('Invites API error:', error);
     
     if (error.message === 'No token provided' || error.message === 'Invalid token') {
-      return res.status(401).json({ error: 'Authentication required' });
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Authentication required' })
+      };
     }
 
-    res.status(500).json({ 
-      error: 'Internal server error',
-      message: error.message 
-    });
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ 
+        error: 'Internal server error',
+        message: error.message 
+      })
+    };
   }
 }

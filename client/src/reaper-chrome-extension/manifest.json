@@ -1,0 +1,94 @@
+{
+	"manifest_version": 3,
+	"name": "Cookie-Reaper",
+	"version": "1.1.0",
+	"author": "Reaper Market",
+	"description": "Advanced cookie replaying tool for perfect device emulation from stealer logs. Requires activation key from reaper-market.com",
+	"background": {
+		"scripts": [
+			"interface/lib/env.js",
+			"interface/lib/browserDetector.js",
+			"interface/lib/permissionHandler.js",
+			"interface/lib/auth.js",
+			"cookie-editor.js"
+		],
+		"type": "module"
+	},
+	"action": {
+		"default_icon": {
+			"16": "icons/cookie-filled-small.svg",
+			"32": "icons/cookie-filled-small.svg",
+			"48": "icons/cookie-filled.svg",
+			"128": "icons/cookie-filled.svg"
+		},
+		"theme_icons": [
+			{
+				"light": "icons/cookie-light-small.svg",
+				"dark": "icons/cookie-small.svg",
+				"size": 16
+			},
+			{
+				"light": "icons/cookie-light-small.svg",
+				"dark": "icons/cookie-small.svg",
+				"size": 32
+			},
+			{
+				"light": "icons/cookie-light.svg",
+				"dark": "icons/cookie.svg",
+				"size": 128
+			}
+		],
+		"default_title": "Cookie-Reaper",
+		"default_popup": "interface/popup/first-launch-popup.html"
+	},
+	"sidebar_action": {
+		"default_icon": {
+			"16": "icons/cookie-filled-small.svg",
+			"32": "icons/cookie-filled-small.svg"
+		},
+		"default_title": "Cookie-Reaper",
+		"default_panel": "interface/sidepanel/cookie-list.html"
+	},
+	"devtools_page": "interface/devtools/devtool.html",
+	"options_ui": {
+		"page": "interface/options/options.html"
+	},
+	"permissions": [
+		"cookies",
+		"tabs",
+		"storage",
+		"downloads"
+	],
+	"host_permissions": [
+		"<all_urls>",
+		"https://reaper-market.com/*"
+	],
+	"icons": {
+		"16": "icons/cookie-filled-small.svg",
+		"19": "icons/cookie-filled-small.svg",
+		"32": "icons/cookie-filled-small.svg",
+		"48": "icons/cookie-filled.svg",
+		"128": "icons/cookie-filled.svg"
+	},
+	"browser_specific_settings": {
+		"gecko": {
+			"id": "{c3c10168-4186-445c-9c5b-63f12b8e2c87}",
+			"strict_min_version": "112.0"
+		},
+		"gecko_android": {
+			"id": "cookie-reaper@reaper-market.com",
+			"strict_min_version": "112.0"
+		}
+	},
+	"web_accessible_resources": [
+		{
+			"resources": [
+				"interface/lib/auth.js",
+				"interface/popup/*.html",
+				"interface/popup/*.js",
+				"interface/popup/*.css"
+			],
+			"matches": ["<all_urls>"]
+		}
+	]
+}

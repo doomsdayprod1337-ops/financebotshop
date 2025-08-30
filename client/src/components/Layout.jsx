@@ -89,26 +89,185 @@ const Layout = () => {
   };
 
   const [showResourcesSubmenu, setShowResourcesSubmenu] = useState(false);
+  const [showShopSubmenu, setShowShopSubmenu] = useState(false);
+  const [showAccountSubmenu, setShowAccountSubmenu] = useState(false);
+  const [contentCounts, setContentCounts] = useState({ news: 0, wiki: 0 });
+  const [shopCounts, setShopCounts] = useState({
+    bots: 0,
+    creditCards: 0,
+    services: 0,
+    configs: 0,
+    financeDocs: 0
+  });
+  const [shopCountsLoading, setShopCountsLoading] = useState(true);
+  const [accountCounts, setAccountCounts] = useState({
+    deposits: 0,
+    tickets: 0,
+    usedInvites: 0,
+    unusedInvites: 0
+  });
+  const [accountCountsLoading, setAccountCountsLoading] = useState(true);
 
-  const navItems = [
-    { path: '/', icon: '🏠', label: 'Dashboard', badge: null, isNew: true },
-    { path: '/wiki', icon: 'ℹ️', label: 'Reaper Wiki', badge: null },
-    { path: '/news', icon: '📰', label: 'News', badge: '22', badgeColor: 'bg-green-500' },
-    { path: '/bots', icon: '🤖', label: 'Bots', badge: '450k+', badgeColor: 'bg-blue-500' },
-    { path: '/generate-fp', icon: '✏️', label: 'Generate FP', badge: null },
-    { path: '/credit-cards', icon: '💳', label: 'Credit Cards', badge: null },
-    { path: '/services', icon: '🔧', label: 'Services', badge: null },
-    { path: '/deposits', icon: '💰', label: 'Deposits', badge: null },
-    { path: '/tickets', icon: '💬', label: 'Tickets', badge: null },
-    { path: '/profile', icon: '👤', label: 'Profile', badge: null },
-    { path: '/invites', icon: '👥', label: 'Invites', badge: null },
-  ];
+  // Load content counts on component mount
+  useEffect(() => {
+    const loadContentCounts = async () => {
+      try {
+        const response = await fetch('/api/content-stats?timePeriod=7d');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setContentCounts({
+              news: data.stats?.news?.recent || 0,
+              wiki: data.stats?.wiki?.recent || 0
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading content counts:', error);
+        // Set default values on error
+        setContentCounts({ news: 0, wiki: 0 });
+      }
+    };
+
+    const loadShopCounts = async () => {
+      setShopCountsLoading(true);
+      try {
+        // Load bots count
+        const botsResponse = await fetch('/api/bots');
+        if (botsResponse.ok) {
+          const botsData = await botsResponse.json();
+          setShopCounts(prev => ({ ...prev, bots: botsData.total || 0 }));
+        }
+        
+        // Load credit cards count
+        const cardsResponse = await fetch('/api/credit-cards');
+        if (cardsResponse.ok) {
+          const cardsData = await cardsResponse.json();
+          setShopCounts(prev => ({ ...prev, creditCards: cardsData.total || 0 }));
+        }
+        
+        // Load services count
+        const servicesResponse = await fetch('/api/services');
+        if (servicesResponse.ok) {
+          const servicesData = await servicesResponse.json();
+          setShopCounts(prev => ({ ...prev, services: servicesData.total || 0 }));
+        }
+        
+        // Load configs count
+        const configsResponse = await fetch('/api/configs');
+        if (configsResponse.ok) {
+          const configsData = await configsResponse.json();
+          setShopCounts(prev => ({ ...prev, configs: configsData.total || 0 }));
+        }
+        
+        // Load finance documents count
+        const financeDocsResponse = await fetch('/api/finance-documents/count');
+        if (financeDocsResponse.ok) {
+          const financeDocsData = await financeDocsResponse.json();
+          setShopCounts(prev => ({ ...prev, financeDocs: financeDocsData.count || 0 }));
+        }
+      } catch (error) {
+        console.error('Error loading shop counts:', error);
+        // Set default values on error
+        setShopCounts({ bots: 0, creditCards: 0, services: 0, configs: 0, financeDocs: 0 });
+      } finally {
+        setShopCountsLoading(false);
+      }
+    };
+
+    const loadAccountCounts = async () => {
+      setAccountCountsLoading(true);
+      try {
+        // Load deposits count
+        const depositsResponse = await fetch('/api/deposits');
+        if (depositsResponse.ok) {
+          const depositsData = await depositsResponse.json();
+          setAccountCounts(prev => ({ ...prev, deposits: depositsData.total || 0 }));
+        }
+        
+        // Load tickets count
+        const ticketsResponse = await fetch('/api/tickets');
+        if (ticketsResponse.ok) {
+          const ticketsData = await ticketsResponse.json();
+          setAccountCounts(prev => ({ ...prev, tickets: ticketsData.total || 0 }));
+        }
+        
+        // Load invites counts
+        const invitesResponse = await fetch('/api/invites');
+        if (invitesResponse.ok) {
+          const invitesData = await invitesResponse.json();
+          setAccountCounts(prev => ({ 
+            ...prev, 
+            usedInvites: invitesData.used || 0,
+            unusedInvites: invitesData.unused || 0
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading account counts:', error);
+        // Set default values on error
+        setAccountCounts({ deposits: 0, tickets: 0, usedInvites: 0, unusedInvites: 0 });
+      } finally {
+        setAccountCountsLoading(false);
+      }
+    };
+
+    // Only load counts once on mount
+    loadContentCounts();
+    loadShopCounts();
+    loadAccountCounts();
+  }, []); // Empty dependency array to prevent re-runs
 
   // Format wallet balance
   const formatWalletBalance = (balance) => {
     if (balance === null || balance === undefined) return '$0.00';
     return `$${parseFloat(balance).toFixed(2)}`;
   };
+
+  // Format shop counts for display
+  const formatShopCount = (count) => {
+    if (count === null || count === undefined || count === 0) return '0';
+    if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M+`;
+    if (count >= 1000) return `${(count / 1000).toFixed(0)}k+`;
+    return count.toLocaleString();
+  };
+
+  // Format invites count for display
+  const formatInvitesCount = (used, unused) => {
+    if ((used === null || used === undefined || used === 0) && (unused === null || unused === undefined || unused === 0)) return null;
+    return `${used || 0}/${unused || 0}`;
+  };
+
+  const navItems = [
+    { path: '/', icon: '🏠', label: 'Dashboard', badge: null, isNew: true },
+    { path: '/wiki', icon: 'ℹ️', label: 'Reaper Wiki', badge: (contentCounts?.wiki || 0) > 0 ? (contentCounts.wiki || 0).toString() : null, badgeColor: (contentCounts?.wiki || 0) > 0 ? 'bg-purple-500' : null },
+    { path: '/news', icon: '📰', label: 'News', badge: (contentCounts?.news || 0) > 0 ? (contentCounts.news || 0).toString() : null, badgeColor: (contentCounts?.news || 0) > 0 ? 'bg-green-500' : null },
+    { 
+      icon: '🛍️', 
+      label: 'Shop', 
+      hasSubmenu: true,
+      badge: shopCountsLoading ? '...' : ((shopCounts?.bots || 0) + (shopCounts?.creditCards || 0) + (shopCounts?.services || 0) + (shopCounts?.configs || 0) + (shopCounts?.financeDocs || 0) > 0 ? formatShopCount((shopCounts?.bots || 0) + (shopCounts?.creditCards || 0) + (shopCounts?.services || 0) + (shopCounts?.configs || 0) + (shopCounts?.financeDocs || 0)) : null),
+      badgeColor: 'bg-blue-500',
+      submenu: [
+        { path: '/bots', icon: '🤖', label: 'Bots', badge: (shopCounts?.bots || 0) > 0 ? formatShopCount(shopCounts.bots || 0) : null, badgeColor: 'bg-blue-500' },
+        { path: '/credit-cards', icon: '💳', label: 'Credit Cards', badge: (shopCounts?.creditCards || 0) > 0 ? formatShopCount(shopCounts.creditCards || 0) : null, badgeColor: 'bg-green-500' },
+        { path: '/services', icon: '🔧', label: 'Services', badge: (shopCounts?.services || 0) > 0 ? formatShopCount(shopCounts.services || 0) : null, badgeColor: 'bg-yellow-500' },
+        { path: '/configs', icon: '⚙️', label: 'Configs', badge: (shopCounts?.configs || 0) > 0 ? formatShopCount(shopCounts.configs || 0) : null, badgeColor: 'bg-red-500' },
+        { path: '/finance-documents', icon: '📄', label: 'Finance Documents', badge: (shopCounts?.financeDocs || 0) > 0 ? formatShopCount(shopCounts.financeDocs || 0) : null, badgeColor: 'bg-blue-500' },
+      ]
+    },
+
+    { 
+      icon: '👤', 
+      label: 'Account', 
+      hasSubmenu: true,
+      submenu: [
+        { path: '/profile', icon: '👤', label: 'Profile', badge: null },
+        { path: '/deposits', icon: '💰', label: 'Deposits', badge: (accountCounts?.deposits || 0) > 0 ? (accountCounts.deposits || 0).toString() : null, badgeColor: 'bg-blue-500' },
+        { path: '/tickets', icon: '💬', label: 'Tickets', badge: (accountCounts?.tickets || 0) > 0 ? (accountCounts.tickets || 0).toString() : null, badgeColor: 'bg-green-500' },
+        { path: '/invites', icon: '👥', label: 'Invites', badge: formatInvitesCount(accountCounts?.usedInvites || 0, accountCounts?.unusedInvites || 0), badgeColor: 'bg-purple-500' },
+      ]
+    },
+  ];
 
   return (
     <div className="flex h-screen bg-gray-900">
@@ -180,32 +339,101 @@ const Layout = () => {
           </div>
         </div>
 
+
+
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={() => setMobileMenuOpen(false)}
-              className={`flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors ${
-                location.pathname === item.path ? 'bg-gray-700 text-white' : ''
-              }`}
-              title={sidebarCollapsed ? item.label : ''}
-            >
-              <span className="text-lg mr-3">{item.icon}</span>
-              <span className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'opacity-0' : 'opacity-100'}`}>
-                {item.label}
-              </span>
-              {!sidebarCollapsed && item.isNew && (
-                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">new</span>
-              )}
-              {!sidebarCollapsed && item.badge && (
-                <span className={`text-xs px-2 py-1 rounded-full ${item.badgeColor || 'bg-gray-600'}`}>
-                  {item.badge}
+          {navItems.map((item) => {
+            if (item.hasSubmenu) {
+              const isShop = item.label === 'Shop';
+              const isAccount = item.label === 'Account';
+              const isResources = item.label === 'Resources';
+              const showSubmenu = isShop ? showShopSubmenu : isAccount ? showAccountSubmenu : showResourcesSubmenu;
+              const setShowSubmenu = isShop ? setShowShopSubmenu : isAccount ? setShowAccountSubmenu : setShowResourcesSubmenu;
+              const borderColor = isShop ? 'border-blue-500' : isAccount ? 'border-green-500' : 'border-purple-500';
+              
+              return (
+                <div key={item.label} className="relative">
+                  <button
+                    onClick={() => setShowSubmenu(!showSubmenu)}
+                    className={`w-full flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors ${
+                      showSubmenu ? 'bg-gray-700 text-white' : ''
+                    }`}
+                    title={sidebarCollapsed ? item.label : ''}
+                  >
+                    <span className="text-lg mr-3">{item.icon}</span>
+                    <span className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'opacity-0' : 'opacity-100'}`}>
+                      {item.label}
+                    </span>
+                    {!sidebarCollapsed && item.badge && (
+                      <span className={`text-xs px-2 py-1 rounded-full ${item.badgeColor || 'bg-gray-600'}`}>
+                        {item.badge}
+                      </span>
+                    )}
+                    {!sidebarCollapsed && (
+                      <svg 
+                        className={`w-4 h-4 ml-2 transition-transform ${showSubmenu ? 'rotate-180' : ''}`} 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </button>
+                  
+                  {/* Submenu */}
+                  {showSubmenu && !sidebarCollapsed && (
+                    <div className={`bg-gray-700 border-l-2 ${borderColor}`}>
+                      {item.submenu.map((subItem) => (
+                        <Link
+                          key={subItem.path}
+                          to={subItem.path}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={`flex items-center px-8 py-2 text-gray-300 hover:bg-gray-600 hover:text-white transition-colors ${
+                            location.pathname === subItem.path ? 'bg-gray-600 text-white' : ''
+                          }`}
+                        >
+                          <span className="text-sm mr-2">{subItem.icon}</span>
+                          <span className="text-sm">{subItem.label}</span>
+                          {subItem.badge && (
+                            <span className={`ml-auto text-xs px-2 py-1 rounded-full ${subItem.badgeColor || 'bg-gray-600'}`}>
+                              {subItem.badge}
+                            </span>
+                          )}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors ${
+                  location.pathname === item.path ? 'bg-gray-700 text-white' : ''
+                }`}
+                title={sidebarCollapsed ? item.label : ''}
+              >
+                <span className="text-lg mr-3">{item.icon}</span>
+                <span className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'opacity-0' : 'opacity-100'}`}>
+                  {item.label}
                 </span>
-              )}
-            </Link>
-          ))}
+                {!sidebarCollapsed && item.isNew && (
+                  <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">new</span>
+                )}
+                {!sidebarCollapsed && item.badge && (
+                  <span className={`text-xs px-2 py-1 rounded-full ${item.badgeColor || 'bg-gray-600'}`}>
+                    {item.badge}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
           
           {/* Admin Panel Link - Only show for admin users */}
           {user && user.is_admin && (
@@ -287,6 +515,16 @@ const Layout = () => {
                   <span className="text-sm mr-2">⬇️</span>
                   <span className="text-sm">Downloads</span>
                 </Link>
+                <Link
+                  to="/generate-fp"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center px-8 py-2 text-gray-300 hover:bg-gray-600 hover:text-white transition-colors ${
+                    location.pathname === '/generate-fp' ? 'bg-gray-600 text-white' : ''
+                  }`}
+                >
+                  <span className="text-sm mr-2">✏️</span>
+                  <span className="text-sm">Generate FP</span>
+                </Link>
               </div>
             )}
           </div>
@@ -306,6 +544,200 @@ const Layout = () => {
           </button>
         </div>
       </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="fixed inset-y-0 left-0 w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
+            {/* Mobile Menu Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+              <h1 className="text-xl font-bold text-white">Reaper</h1>
+              <button 
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Mobile Navigation */}
+            <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+              {navItems.map((item) => {
+                if (item.hasSubmenu) {
+                  const isShop = item.label === 'Shop';
+                  const isAccount = item.label === 'Account';
+                  const isResources = item.label === 'Resources';
+                  const showSubmenu = isShop ? showShopSubmenu : isAccount ? showAccountSubmenu : showResourcesSubmenu;
+                  const setShowSubmenu = isShop ? setShowShopSubmenu : isAccount ? setShowAccountSubmenu : setShowResourcesSubmenu;
+                  
+                  return (
+                    <div key={item.label}>
+                      <button
+                        onClick={() => setShowSubmenu(!showSubmenu)}
+                        className="w-full flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors rounded-lg"
+                      >
+                        <span className="text-lg mr-3">{item.icon}</span>
+                        <span className="flex-1">{item.label}</span>
+                        <svg 
+                          className={`w-4 h-4 transition-transform ${showSubmenu ? 'rotate-180' : ''}`} 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      
+                      {/* Mobile Submenu */}
+                      {showSubmenu && (
+                        <div className="ml-4 mt-2 space-y-1">
+                          {item.submenu.map((subItem) => (
+                            <Link
+                              key={subItem.path}
+                              to={subItem.path}
+                              onClick={() => setMobileMenuOpen(false)}
+                              className={`flex items-center px-4 py-2 text-gray-400 hover:text-white transition-colors rounded ${
+                                location.pathname === subItem.path ? 'text-white bg-gray-700' : ''
+                              }`}
+                            >
+                              <span className="text-sm mr-2">{subItem.icon}</span>
+                              <span className="text-sm">{subItem.label}</span>
+                              {subItem.badge && (
+                                <span className={`ml-auto text-xs px-2 py-1 rounded-full ${subItem.badgeColor || 'bg-gray-600'}`}>
+                                  {subItem.badge}
+                                </span>
+                              )}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+                
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors rounded-lg ${
+                      location.pathname === item.path ? 'bg-gray-700 text-white' : ''
+                    }`}
+                  >
+                    <span className="text-lg mr-3">{item.icon}</span>
+                    <span className="flex-1">{item.label}</span>
+                    {item.isNew && (
+                      <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">new</span>
+                    )}
+                    {item.badge && (
+                      <span className={`text-xs px-2 py-1 rounded-full ${item.badgeColor || 'bg-gray-600'}`}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+              
+              {/* Mobile Resources Section */}
+              <div>
+                <button
+                  onClick={() => setShowResourcesSubmenu(!showResourcesSubmenu)}
+                  className="w-full flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors rounded-lg"
+                >
+                  <span className="text-lg mr-3">⚙️</span>
+                  <span className="flex-1">Resources</span>
+                  <span className="text-xs px-2 py-1 rounded-full bg-green-500">7.2 | 22.2</span>
+                  <svg 
+                    className={`w-4 h-4 transition-transform ${showResourcesSubmenu ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {/* Mobile Resources Submenu */}
+                {showResourcesSubmenu && (
+                  <div className="ml-4 mt-2 space-y-1">
+                    <Link
+                      to="/software"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center px-4 py-2 text-gray-400 hover:text-white transition-colors rounded ${
+                        location.pathname === '/software' ? 'text-white bg-gray-700' : ''
+                      }`}
+                    >
+                      <span className="text-sm mr-2">💻</span>
+                      <span className="text-sm">Software</span>
+                    </Link>
+                    <Link
+                      to="/bin-checker"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center px-4 py-2 text-gray-400 hover:text-white transition-colors rounded ${
+                        location.pathname === '/bin-checker' ? 'text-white bg-gray-700' : ''
+                      }`}
+                    >
+                      <span className="text-sm mr-2">🔍</span>
+                      <span className="text-sm">BIN Checker</span>
+                    </Link>
+                    <Link
+                      to="/downloads"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center px-4 py-2 text-gray-400 hover:text-white transition-colors rounded ${
+                        location.pathname === '/downloads' ? 'text-white bg-gray-700' : ''
+                      }`}
+                    >
+                      <span className="text-sm mr-2">⬇️</span>
+                      <span className="text-sm">Downloads</span>
+                    </Link>
+                    <Link
+                      to="/generate-fp"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center px-4 py-2 text-gray-400 hover:text-white transition-colors rounded ${
+                        location.pathname === '/generate-fp' ? 'text-white bg-gray-700' : ''
+                      }`}
+                    >
+                      <span className="text-sm mr-2">✏️</span>
+                      <span className="text-sm">Generate FP</span>
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              {/* Admin Panel Link for Mobile */}
+              {user && user.is_admin && (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleAdminAccess();
+                  }}
+                  className="w-full flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors rounded-lg"
+                >
+                  <span className="text-lg mr-3">👑</span>
+                  <span className="flex-1">Admin Panel</span>
+                  <span className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full">ADMIN</span>
+                </button>
+              )}
+            </nav>
+
+            {/* Mobile Logout */}
+            <div className="border-t border-gray-700 p-4">
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleLogout();
+                }}
+                className="w-full flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors rounded-lg"
+              >
+                <span className="text-lg mr-3">🚪</span>
+                <span>Logout</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">

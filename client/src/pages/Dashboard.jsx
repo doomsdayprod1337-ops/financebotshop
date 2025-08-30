@@ -10,10 +10,11 @@ import { getAllBots } from '../data/botDatabase';
 import api from '../config/axios';
 
 const Dashboard = () => {
-  console.log('Dashboard component loading...');
+  // Remove excessive logging
+  // console.log('Dashboard component loading...');
   const navigate = useNavigate();
   const { user } = useAuth();
-  console.log('Dashboard - user from context:', user);
+  // console.log('Dashboard - user from context:', user);
   
   const [botStats, setBotStats] = useState({
     overall: { country: 'Overall', last24h: 0, lastWeek: 0, lastMonth: 0, available: 0 },
@@ -29,11 +30,18 @@ const Dashboard = () => {
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [depositAmount, setDepositAmount] = useState(0);
   const [minimumDepositAmount, setMinimumDepositAmount] = useState(50.00);
+  // Remove unused contentCounts state - Layout component handles this
+  // const [contentCounts, setContentCounts] = useState({ news: 0, wiki: 0 });
 
   // Load minimum deposit amount on component mount
   useEffect(() => {
     loadMinimumDepositAmount();
   }, []);
+
+  // Remove duplicate content counts loading - Layout component already handles this
+  // useEffect(() => {
+  //   loadContentCounts();
+  // }, []);
 
   const loadMinimumDepositAmount = async () => {
     try {
@@ -47,6 +55,21 @@ const Dashboard = () => {
       setMinimumDepositAmount(50.00);
     }
   };
+
+  // Remove this function since it's no longer needed
+  // const loadContentCounts = async () => {
+  //   try {
+  //     const response = await api.get('/api/content-stats?timePeriod=7d');
+  //     if (response.data.success) {
+  //         setContentCounts({
+  //           news: response.data.stats.news.recent,
+  //           wiki: response.data.stats.wiki.recent
+  //         });
+  //     }
+  //   } catch (error) {
+  //     console.error('Error loading content counts:', error);
+  //   }
+  // };
 
   // Filter countries based on search
   const filteredCountries = botStats.countries.filter(country =>
@@ -397,7 +420,7 @@ const Dashboard = () => {
           <h3 className="text-lg font-semibold text-white mb-4">Generate Fingerprint</h3>
           <button 
             onClick={() => navigate('/generate-fp')}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded transition-colors"
+            className="w-full bg-green-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors"
           >
             Create FP
           </button>

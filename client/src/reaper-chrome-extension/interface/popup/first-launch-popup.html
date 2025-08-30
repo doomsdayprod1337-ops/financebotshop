@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Reaper - Welcome</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 480px;
+            min-height: 650px;
+            background: #000000;
+            color: #ffffff;
+            font-family: 'Rajdhani', sans-serif;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(255, 0, 0, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 0, 0, 0.05) 0%, transparent 50%),
+                linear-gradient(45deg, #0a0a0a 0%, #1a1a1a 25%, #0a0a0a 50%, #1a1a1a 75%, #0a0a0a 100%);
+            background-size: 200% 200%;
+            animation: backgroundShift 8s ease-in-out infinite;
+            z-index: -2;
+        }
+        
+        @keyframes backgroundShift {
+            0%, 100% { background-position: 0% 0%; }
+            50% { background-position: 100% 100%; }
+        }
+        
+        /* Grid overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(255, 0, 0, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 0, 0, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+            z-index: -1;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #000000 0%, #1a0000 50%, #000000 100%);
+            padding: 25px 20px;
+            text-align: center;
+            border-bottom: 2px solid #ff0000;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 0, 0, 0.1), transparent);
+            animation: scanline 3s ease-in-out infinite;
+        }
+        
+        @keyframes scanline {
+            0% { left: -100%; }
+            50% { left: 100%; }
+            100% { left: 100%; }
+        }
+        
+        .header h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 28px;
+            font-weight: 900;
+            color: #ff0000;
+            text-shadow: 
+                0 0 10px #ff0000,
+                0 0 20px #ff0000,
+                0 0 30px #ff0000;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000, 0 0 30px #ff0000; }
+            to { text-shadow: 0 0 15px #ff0000, 0 0 25px #ff0000, 0 0 35px #ff0000; }
+        }
+        
+        .header .subtitle {
+            font-size: 14px;
+            color: #cccccc;
+            font-weight: 400;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        
+        .hero-section {
+            padding: 30px 20px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .mask-container {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 25px;
+        }
+        
+        .mask {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #333 0%, #666 50%, #333 100%);
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 
+                0 0 20px rgba(255, 0, 0, 0.3),
+                inset 0 0 20px rgba(0, 0, 0, 0.8);
+            border: 2px solid #ff0000;
+            animation: maskFloat 4s ease-in-out infinite;
+        }
+        
+        @keyframes maskFloat {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+        }
+        
+        .mask::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 25px;
+            width: 70px;
+            height: 90px;
+            background: 
+                radial-gradient(ellipse at center, #fff 0%, transparent 70%),
+                linear-gradient(90deg, transparent 0%, #fff 20%, #fff 80%, transparent 100%);
+            border-radius: 50%;
+            opacity: 0.8;
+        }
+        
+        .mask::after {
+            content: '';
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 20px;
+            background: linear-gradient(90deg, transparent 0%, #fff 20%, #fff 80%, transparent 100%);
+            border-radius: 10px;
+            opacity: 0.6;
+        }
+        
+        .brand-text {
+            margin-top: 20px;
+            font-family: 'Orbitron', monospace;
+            font-size: 24px;
+            font-weight: 700;
+            color: #ff0000;
+            text-shadow: 0 0 15px #ff0000;
+            letter-spacing: 3px;
+            animation: textGlow 3s ease-in-out infinite;
+        }
+        
+        @keyframes textGlow {
+            0%, 100% { text-shadow: 0 0 15px #ff0000; }
+            50% { text-shadow: 0 0 25px #ff0000, 0 0 35px #ff0000; }
+        }
+        
+        .welcome-text {
+            padding: 25px;
+            text-align: center;
+            line-height: 1.6;
+            background: rgba(0, 0, 0, 0.7);
+            margin: 0 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        .welcome-text h2 {
+            color: #ff6666;
+            margin-bottom: 15px;
+            font-size: 22px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .welcome-text p {
+            margin-bottom: 15px;
+            color: #cccccc;
+            font-size: 16px;
+            font-weight: 400;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 25px 20px;
+        }
+        
+        .feature-card {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 0, 0, 0.2);
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 0, 0, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .feature-card:hover::before {
+            left: 100%;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 0, 0, 0.5);
+            box-shadow: 0 10px 25px rgba(255, 0, 0, 0.2);
+        }
+        
+        .feature-icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+            display: block;
+        }
+        
+        .feature-title {
+            color: #ff6666;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .feature-desc {
+            color: #aaaaaa;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .button-container {
+            padding: 25px 20px;
+            text-align: center;
+        }
+        
+        .panel-section-footer-button {
+            background: linear-gradient(135deg, #ff0000 0%, #cc0000 50%, #ff0000 100%);
+            color: white;
+            border: none;
+            padding: 18px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            margin: 12px;
+            min-width: 200px;
+            transition: all 0.3s ease;
+            box-shadow: 
+                0 4px 15px rgba(255, 0, 0, 0.3),
+                0 0 0 0 rgba(255, 0, 0, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .panel-section-footer-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .panel-section-footer-button:hover::before {
+            left: 100%;
+        }
+        
+        .panel-section-footer-button:hover {
+            background: linear-gradient(135deg, #ff3333 0%, #dd0000 50%, #ff3333 100%);
+            transform: translateY(-3px);
+            box-shadow: 
+                0 8px 25px rgba(255, 0, 0, 0.4),
+                0 0 0 0 rgba(255, 0, 0, 0.7);
+        }
+        
+        .panel-section-footer-button:active {
+            transform: translateY(-1px);
+        }
+        
+        .panel-section-footer-button.secondary {
+            background: linear-gradient(135deg, #333 0%, #555 50%, #333 100%);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .panel-section-footer-button.secondary:hover {
+            background: linear-gradient(135deg, #444 0%, #666 50%, #444 100%);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+        
+        .marketplace-link {
+            display: block;
+            color: #ff6666;
+            text-decoration: none;
+            font-size: 13px;
+            margin-top: 20px;
+            opacity: 0.8;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+        
+        .marketplace-link:hover {
+            opacity: 1;
+            color: #ff8888;
+            transform: translateX(5px);
+        }
+        
+        .footer {
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid rgba(255, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.8);
+            margin-top: 20px;
+        }
+        
+        .footer p {
+            font-size: 11px;
+            opacity: 0.6;
+            margin: 5px 0;
+            color: #888888;
+            font-weight: 300;
+        }
+        
+        /* Particle effects */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #ff0000;
+            border-radius: 50%;
+            animation: particleFloat 6s linear infinite;
+        }
+        
+        @keyframes particleFloat {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-10vh) translateX(100px);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="particles" id="particles"></div>
+    
+    <div class="header">
+        <h1>🍪 COOKIE REAPER</h1>
+        <div class="subtitle">Device Emulator & Stealer Log Processor</div>
+    </div>
+    
+    <div class="hero-section">
+        <div class="mask-container">
+            <div class="mask"></div>
+        </div>
+        <div class="brand-text">REAPER MARKET</div>
+    </div>
+    
+    <div class="welcome-text">
+        <h2>🔑 Welcome to the Dark Side</h2>
+        <p>Advanced cookie replaying tool for perfect device emulation from stealer logs.</p>
+        <p>This extension requires activation to unlock all features.</p>
+    </div>
+    
+    <div class="features-grid">
+        <div class="feature-card">
+            <span class="feature-icon">🎯</span>
+            <div class="feature-title">Cookie Management</div>
+            <div class="feature-desc">Advanced editing & manipulation</div>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">📥</span>
+            <div class="feature-title">Stealer Logs</div>
+            <div class="feature-desc">Import & process logs</div>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">📤</span>
+            <div class="feature-title">Device Profiles</div>
+            <div class="feature-desc">Export & clone devices</div>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">🔄</span>
+            <div class="feature-title">Perfect Emulation</div>
+            <div class="feature-desc">Clone any device state</div>
+        </div>
+    </div>
+    
+    <div class="button-container">
+        <button
+          class="panel-section-footer-button"
+          id="register-and-activate"
+          type="button"
+        >
+          🔑 Register & Activate
+        </button>
+        
+        <button
+          class="panel-section-footer-button secondary"
+          id="contact-support"
+          type="button"
+        >
+          💬 Contact Support
+        </button>
+        
+        <a href="https://reaper-market.com" target="_blank" class="marketplace-link">
+          Visit reaper-market.com →
+        </a>
+    </div>
+    
+    <div class="footer">
+        <p>Cookie Reaper v2.0.0 - Powered by Reaper Market</p>
+        <p>Advanced device emulation for security research</p>
+    </div>
+    
+    <script src="first-launch-popup.js"></script>
+</body>
+</html>

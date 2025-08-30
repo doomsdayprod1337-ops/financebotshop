@@ -11,7 +11,7 @@ exports.handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': process.env.FRONTEND_URL || 'http://localhost:3000',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS'
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
   };
 
   // Handle preflight requests
@@ -23,8 +23,8 @@ exports.handler = async (event, context) => {
     };
   }
 
-  // Only allow GET requests
-  if (event.httpMethod !== 'GET') {
+  // Only allow GET and POST requests
+  if (!['GET', 'POST'].includes(event.httpMethod)) {
     return {
       statusCode: 405,
       headers,
@@ -56,9 +56,11 @@ exports.handler = async (event, context) => {
 
     const userId = decoded.userId;
 
-    // Try to fetch deposits from deposits table
-    try {
-      const { data: deposits, error } = await supabase
+    if (event.httpMethod === 'GET') {
+      // Get deposits with optional filtering
+      const { status, active, limit = 50, offset = 0 } = event.queryStringParameters || {};
+
+      let query = supabase
         .from('deposits')
         .select(`
           id,
@@ -73,48 +75,105 @@ exports.handler = async (event, context) => {
           required_confirmations,
           expires_at,
           confirmed_at,
+          admin_confirmed_at,
+          admin_confirmed_by,
+          usd_amount,
+          crypto_amount,
+          exchange_rate,
+          is_active,
+          timeout_at,
           created_at,
           updated_at
         `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        // If deposits table doesn't exist, return empty array
-        if (error.code === 'PGRST116') {
-          return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({
-              success: true,
-              deposits: [],
-              message: 'No deposits table found - returning empty list'
-            })
-          };
+      // Apply status filter
+      if (status) {
+        if (status === 'pending') {
+          query = query.eq('status', 'pending');
+        } else if (status === 'confirmed') {
+          query = query.eq('status', 'confirmed');
+        } else if (status === 'failed') {
+          query = query.eq('status', 'failed');
+        } else if (status === 'expired') {
+          query = query.eq('status', 'expired');
+        } else if (status === 'timed_out') {
+          query = query.eq('status', 'timed_out');
         }
-        throw error;
       }
+
+      // Apply active filter
+      if (active === 'true') {
+        query = query.eq('is_active', true);
+      } else if (active === 'false') {
+        query = query.eq('is_active', false);
+      }
+
+      // Apply pagination
+      if (limit && offset) {
+        query = query.range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+      }
+
+      const { data: deposits, error } = await query;
+
+      if (error) {
+        console.error('Error fetching deposits:', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ error: 'Failed to fetch deposits' })
+        };
+      }
+
+      // Process deposits to add additional information
+      const processedDeposits = deposits.map(deposit => {
+        const depositObj = { ...deposit };
+        
+        // Add status information
+        if (deposit.status === 'pending' && deposit.timeout_at) {
+          const now = new Date();
+          const timeout = new Date(deposit.timeout_at);
+          if (now > timeout) {
+            depositObj.status = 'timed_out';
+            depositObj.is_active = false;
+          }
+        }
+        
+        // Add time remaining for pending deposits
+        if (deposit.status === 'pending' && deposit.timeout_at) {
+          const now = new Date();
+          const timeout = new Date(deposit.timeout_at);
+          const timeLeft = timeout - now;
+          if (timeLeft > 0) {
+            const minutes = Math.floor(timeLeft / 60000);
+            const seconds = Math.floor((timeLeft % 60000) / 1000);
+            depositObj.time_remaining = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+          } else {
+            depositObj.time_remaining = 'Expired';
+          }
+        }
+        
+        return depositObj;
+      });
 
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
           success: true,
-          deposits: deposits || []
+          deposits: processedDeposits,
+          total: processedDeposits.length,
+          filters: { status, active, limit, offset }
         })
       };
 
-    } catch (tableError) {
-      // If there's any error with the deposits table, return empty array
-      console.log('Deposits table error (returning empty list):', tableError.message);
+    } else if (event.httpMethod === 'POST') {
+      // Create new deposit (this should be handled by create-deposit.js)
       return {
-        statusCode: 200,
+        statusCode: 405,
         headers,
-        body: JSON.stringify({
-          success: true,
-          deposits: [],
-          message: 'Deposits table not available - returning empty list'
-        })
+        body: JSON.stringify({ error: 'Use /api/create-deposit to create deposits' })
       };
     }
 
